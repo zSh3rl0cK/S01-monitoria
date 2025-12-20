@@ -7,7 +7,7 @@ O conteúdo inclui:
 * **Slides em PDF** com explicações teóricas (as gravações em vídeo são disponibilizadas apenas para os alunos da disciplina);
 * **Códigos práticos** com temas diversos, desenvolvidos para aplicar os conceitos apresentados em cada aula.
   
-Os exemplos de código modelam **entidades do mundo real** e exploram diferentes contextos, com o objetivo de demonstrar a **flexibilidade e aplicabilidade** dos paradigmas estudados.
+Os exemplos de código modelam **entidades do mundo real** e exploram diferentes contextos, com o objetivo de demonstrar a **flexibilidade e aplicabilidade** dos paradigmas estudados e cada nova estrutura ou conceito abordado na aula.
 
 ## Observações
 
