@@ -1,0 +1,3 @@
+C:/Users/aliss/CLionProjects/POOC++/cmake-build-debug/CMakeFiles/POOC__.dir
+C:/Users/aliss/CLionProjects/POOC++/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/aliss/CLionProjects/POOC++/cmake-build-debug/CMakeFiles/rebuild_cache.dir
