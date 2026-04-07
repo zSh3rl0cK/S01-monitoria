@@ -1,5 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System;
+using System.Collections.Generic;
 
 // todo: CLASSE BASE
 // molde principal, todo item do jogo tem um nome
@@ -10,7 +14,7 @@ public class Item
     // { get; set; } é a forma do C# de expor o atributo de forma controlada
     // get = pode ler, set = pode alterar
     public string Nome { get; set; }
-    
+
     // todo: CONSTRUTOR
     // roda automaticamente quando o objeto é criado
     public Item(string nome)
@@ -106,8 +110,7 @@ public class Link
     // a lista nasce junto com Link e morre junto com ele
     // não faz sentido existir inventário sem um herói dono dele
     private List<Item> _inventario;
-    private Arma arma;
-    
+
     public Link()
     {
         this._inventario = new List<Item>();
