@@ -1,41 +1,41 @@
 from abc import ABC, abstractmethod
 
-# --- 1. Interfaces em Python (via ABC) ---
 
+# INTERFACE (contrato via classe abstrata)
+# Python nao tem interface nativa como C# ou Java
+# ABC é a forma do Python simular isso
+# qualquer classe que herdar de IAcao É OBRIGADA a ter atacar() e defender()
 class IAcao(ABC):
-    """
-    Interface (Contrato) que define as ações básicas que qualquer entidade
-    capaz de lutar deve implementar. Garante o Polimorfismo.
-    """
 
     @abstractmethod
     def atacar(self, alvo):
-        """Define a lógica de ataque da entidade."""
         pass
 
-    @abstractmethod 
+    @abstractmethod
     def defender(self):
-        """Define a lógica de defesa da entidade."""
         pass
 
 
-# --- 2. Classes para Relações (Composição e Agregação) ---
-
+# CLASSE SIMPLES
+# Arma nao herda de nada, é só um molde com nome e dano
+# vai ser usada dentro de Personagem (isso é Composição)
 class Arma:
-    """
-    Classe simples para o objeto Arma.
-    Será usada em Composição, pois um Personagem "possui" uma Arma.
-    Demonstra encapsulamento com atributos protegidos e privados.
-    """
 
     def __init__(self, nome: str, dano: int):
-        self._nome = nome  # protegido — pode ser acessado, mas não é recomendado modificar fora da classe
-        self.__dano = dano  # privado — acesso direto é bloqueado
+        # ENCAPSULAMENTO - niveis de acesso em Python
+        # Python nao bloqueia acesso de verdade, é mais uma convenção
+        # _nome  = um underline  = "protegido", pode usar mas nao é recomendado mexer fora da classe
+        # __dano = dois underlines = "privado", o Python embaralha o nome pra dificultar o acesso direto
+        self._nome = nome
+        self.__dano = dano
 
+    # Obs: self indica que o método recebe o próprio objeto/instância desta classe
     def usar(self):
         return f"{self._nome} (Dano: {self.__dano})"
 
-    # Getter e Setter controlados (encapsulamento total)
+    # GETTER e SETTER
+    # como __dano é privado, criamos métodos pra ler e alterar ele de forma controlada
+    # isso é encapsulamento na prática: o objeto controla os próprios dados
     def get_dano(self):
         return self.__dano
 
@@ -46,25 +46,22 @@ class Arma:
             print("O dano deve ser positivo!")
 
 
+# AGREGAÇÃO
+# Item existe por conta própria, independente de qualquer Inventario
+# se o Inventario sumir, o Item continua existindo
 class Item:
-    """
-    Classe simples para itens diversos.
-    Será usada em Agregação no Inventario.
-    """
-
+# Init no python seria o construtor que usamos nas outras linguagens
     def __init__(self, nome: str):
         self.nome = nome
 
 
+# AGREGAÇÃO (cont.)
+# Inventario guarda referências pros Itens, mas nao é dono deles
+# diferente de Composição, onde o filho morre junto com o pai
 class Inventario:
-    """
-    Classe para Agregação: 'Inventario tem um' conjunto de Itens.
-    Os Itens podem existir fora do Inventario (Agregação).
-    Uso de Estrutura de Dados (listas).
-    """
 
     def __init__(self):
-        self._itens = []  # atributo protegido — acessível, mas não recomendado
+        self._itens = []
 
     def adicionar_item(self, item: Item):
         self._itens.append(item)
@@ -76,23 +73,22 @@ class Inventario:
         return ", ".join([item.nome for item in self._itens])
 
 
-# --- 3. Classes Base e Subclasses (Herança e Implementação da Interface) ---
-
+# CLASSE BASE
+# molde principal de todo personagem do jogo
+# demonstra Encapsulamento e vai ser herdada por Guerreiro e Mago
 class Personagem:
-    """
-    Classe base para todos os personagens.
-    Demonstra Abstração e Encapsulamento.
-    """
 
     def __init__(self, nome: str, vida: int, arma: Arma):
-        self.nome = nome  # público
-        self._vida = vida  # protegido
-        self.__nivel = 1  # privado
-        self.arma = arma  # composição: Personagem é dono da Arma
-        self.inventario = Inventario()  # agregação: Personagem tem um Inventario
+        self.nome = nome        # público - qualquer um pode acessar
+        self._vida = vida       # protegido - um underline, evitar mexer fora da classe
+        self.__nivel = 1        # privado - dois underlines, só a classe acessa diretamente
+        self.arma = arma        # composição: Personagem é dono da Arma
+        self.inventario = Inventario()  # composição: Inventario nasce e morre junto com o Personagem
 
     def mostrar_status(self):
-        return f"Status: {self.nome} | Vida: {self._vida} | Nível: {self.__nivel} | Arma: {self.arma._nome} | Itens: {self.inventario.listar_itens()}"
+        return (f"Status: {self.nome} | Vida: {self._vida} | "
+                f"Nível: {self.__nivel} | Arma: {self.arma._nome} | "
+                f"Itens: {self.inventario.listar_itens()}")
 
     def receber_dano(self, dano):
         self._vida -= dano
@@ -101,11 +97,9 @@ class Personagem:
         print(f"<{self.nome}> recebeu {dano} de dano. Vida restante: {self._vida}")
 
     def subir_nivel(self):
-        """Aumenta o nível (atributo privado)."""
         self.__nivel += 1
         print(f"{self.nome} subiu para o nível {self.__nivel}!")
 
-    # Getters e Setters
     def get_nivel(self):
         return self.__nivel
 
@@ -116,14 +110,15 @@ class Personagem:
             print("A vida não pode ser negativa!")
 
 
+# HERANÇA + INTERFACE
+# Guerreiro herda de Personagem E implementa IAcao
+# por isso é obrigado a ter atacar() e defender()
 class Guerreiro(Personagem, IAcao):
-    """
-    Subclasse que herda de Personagem e implementa a interface IAcao.
-    Demonstra Herança e Polimorfismo (implementação específica de 'atacar').
-    """
 
-    def atacar(self, alvo: Personagem):
-        dano_total = self.arma.get_dano() * 1.5  # usa getter (encapsulamento)
+    #  SOBRESCRITA (override)
+    # reescreve atacar() com o comportamento específico do Guerreiro
+    def atacar(self, alvo):
+        dano_total = self.arma.get_dano() * 1.5
         print(f"<{self.nome}> ATACA com força de GUERREIRO usando {self.arma.usar()} em {alvo.nome}!")
         alvo.receber_dano(dano_total)
 
@@ -131,12 +126,12 @@ class Guerreiro(Personagem, IAcao):
         print(f"<{self.nome}> se defende com o escudo, reduzindo o próximo dano.")
 
 
+# POLIMORFISMO
+# Mago também implementa IAcao, mas o atacar() é completamente diferente
+# mesma chamada, comportamento diferente — isso é polimorfismo
 class Mago(Personagem, IAcao):
-    """
-    Outra subclasse que implementa IAcao, mostrando Polimorfismo.
-    """
 
-    def atacar(self, alvo: Personagem):
+    def atacar(self, alvo):
         dano_total = self.arma.get_dano() * 0.8 + 10
         print(f"<{self.nome}> lança uma BOLA DE FOGO (Mago) em {alvo.nome}!")
         alvo.receber_dano(dano_total)
@@ -145,66 +140,48 @@ class Mago(Personagem, IAcao):
         print(f"<{self.nome}> usa uma barreira arcana para defesa.")
 
 
-# --- 4. Demonstração de Uso e Polimorfismo ---
-
 if __name__ == "__main__":
     print("--- Inicializando o Mini-RPG ---")
 
-    # Composição: Armas que são "partes" dos personagens
+    # composição: armas que pertencem aos personagens
     espada = Arma("Espada Longa", 15)
     cajado = Arma("Cajado Élfico", 12)
 
-    # Teste de encapsulamento via setter
+    # testando getter e setter antes de criar os personagens
     cajado.set_dano(espada.get_dano())
 
-    # Criação dos Personagens (Herança + Composição da Arma)
     arthur = Guerreiro("Arthur", 100, espada)
     merlin = Mago("Merlin", 80, cajado)
 
-    # Agregação: Itens que podem existir fora do inventário
+    # agregação: itens existem fora e sao só referenciados pelo inventário
     pocao = Item("Poção de Vida")
     mapa = Item("Mapa Antigo")
 
-    # Gerenciamento de Itens no Inventario (Agregação + Estrutura de Dados)
+
     arthur.inventario.adicionar_item(pocao)
     merlin.inventario.adicionar_item(mapa)
 
-    print("\n--- Status Inicial dos Personagens ---")
+    print("\n--- Status Inicial ---")
     print(arthur.mostrar_status())
     print(merlin.mostrar_status())
 
-    # Estrutura de Dados (Lista) para Polimorfismo
-    # Todos são do tipo IAcao e podem ser gerenciados na mesma lista
+    #  POLIMORFISMO EM AÇÃO
+    # lista do tipo IAcao guarda Guerreiro e Mago
+    # o mesmo .atacar() chama métodos diferentes dependendo do objeto
     time_da_luta: list[IAcao] = [arthur, merlin]
 
-    print("\n--- Simulação da Luta (Polimorfismo e Interface IAcao) ---")
-
-    # Iteração polimórfica: chamamos o mesmo método 'atacar', mas a ação é diferente
+    print("\n--- Simulação da Luta ---")
     for combatente in time_da_luta:
         if isinstance(combatente, Guerreiro):
-            combatente.atacar(merlin)  # Guerreiro ataca Mago
+            combatente.atacar(merlin)
         elif isinstance(combatente, Mago):
-            combatente.atacar(arthur)  # Mago ataca Guerreiro
+            combatente.atacar(arthur)
 
-    print("\n--- Testando Encapsulamento ---")
-    # 🔹 Acesso protegido (permitido, mas não recomendado)
-    arthur._vida = 999
-    print(f"Vida alterada externamente (protegido): {arthur._vida}")
-
-    # 🔹 Tentativa de acessar atributo privado (não acessível diretamente)
-    try:
-        print(arthur.__nivel)
-    except AttributeError:
-        print("Não é possível acessar __nivel diretamente (privado)")
-
-    # 🔹 Acesso correto via getter
-    print(f"Nível atual (via getter): {arthur.get_nivel()}")
-
-    # 🔹 Modificando atributo privado da arma via método (encapsulamento)
+    # ENCAPSULAMENTO NA PRÁTICA
+    # forma correta: usando getter e setter
+    print(f"\nNível atual (via getter): {arthur.get_nivel()}")
     arthur.arma.set_dano(25)
-    print(f"Dano da arma atualizado via método: {arthur.arma.get_dano()}")
-
-    # 🔹 Subir nível corretamente
+    print(f"Dano atualizado via setter: {arthur.arma.get_dano()}")
     arthur.subir_nivel()
 
     print("\n--- Status Final ---")
