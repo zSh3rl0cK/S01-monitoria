@@ -1,29 +1,41 @@
 package org.example;
 
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.List;
 
+// HERANÇA
+// Cliente herda de Pessoa com extends
+// a relação é: "Cliente É UMA Pessoa"
 public class Cliente extends Pessoa {
-    // Collections: LinkedHashSet - Garante Unicidade (Set) e Ordem de Inserção (Linked)
-    private LinkedHashSet<Livros> livrosEmprestados;
+
+    // AGREGAÇÃO
+    // livrosEmprestados guarda referências pra Livros que já existiam fora do Cliente
+    // se o Cliente sumir, os Livros continuam existindo
+    private List<Livros> livrosEmprestados;
 
     public Cliente(String nome, int id) {
-        // Herança: Chamada obrigatória ao construtor da classe pai
+        // super() chama o construtor da classe mãe (Pessoa)
+        // obrigatório em Java quando a classe pai tem construtor com parâmetros
         super(nome, id);
-        this.livrosEmprestados = new LinkedHashSet<>();
+        this.livrosEmprestados = new ArrayList<>();
     }
 
-    // Uso do LinkedHashSet
     public void emprestarLivro(Livros livro) {
-        if (livrosEmprestados.add(livro)) {
-            System.out.println("[Empréstimo] Cliente " + getNome() + " pegou: " + livro.getTitulo() + " emprestado");
+        if (!livrosEmprestados.contains(livro)) {
+            livrosEmprestados.add(livro);
+            System.out.println("[Empréstimo] Cliente " + getNome() + " pegou: " + livro.getTitulo() + " emprestado.");
         } else {
             System.out.println("[Empréstimo] Aviso: O cliente já possui o livro: " + livro.getTitulo());
         }
     }
 
     public void listarEmprestados() {
-        System.out.println("\n--- Livros de " + getNome() + " (Ordem de Empréstimo) ---");
-        // Iteração sobre o LinkedHashSet para mostrar a ordem
+        System.out.println("\n--- Livros de " + getNome() + " ---");
+
+        // POLIMORFISMO EM AÇÃO
+        // o mesmo for para todos, mas cada Livro pode ter seu próprio comportamento
+        // for(Tipo variavel : colecao) é o foreach do Java
+        // equivale ao for..in do Python ou ao .each do Ruby
         for (Livros livro : livrosEmprestados) {
             System.out.println("- " + livro.getTitulo());
         }
