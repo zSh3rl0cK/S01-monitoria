@@ -2,13 +2,14 @@ package org.example;
 
 import java.util.ArrayList;
 
+// AGREGAÇÃO
+// Livros guarda uma referência a um Autor que já existia antes
+// se o Livro sumir, o Autor continua existindo
 public class Livros {
-    private String isbn; // codigo de barras
-    private String titulo; // titulo do livro
-    // Composição: Livro tem uma referência a um Autor (o Autor pode existir sem o Livro)
-    private Autor autor;
 
-    // Collections: ArrayList - Mantém a ordem de inserção das palavras-chave
+    private String isbn;
+    private String titulo;
+    private Autor autor;
     private ArrayList<String> palavrasChave;
 
     public Livros(String isbn, String titulo, Autor autor) {
@@ -16,7 +17,10 @@ public class Livros {
         this.titulo = titulo;
         this.autor = autor;
         this.palavrasChave = new ArrayList<>();
-        autor.adicionarTitulo(titulo); // Notifica o Autor (exemplo de acoplamento fraco)
+
+        // ao criar o Livro, já notificamos o Autor que ele escreveu esse título
+        // isso é acoplamento fraco — Livro e Autor se conhecem mas nao dependem um do outro
+        autor.adicionarTitulo(titulo);
     }
 
     public String getIsbn() {
@@ -27,7 +31,6 @@ public class Livros {
         return titulo;
     }
 
-    // Uso do ArrayList
     public void adicionarPalavraChave(String palavra) {
         this.palavrasChave.add(palavra);
     }

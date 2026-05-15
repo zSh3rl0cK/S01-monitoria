@@ -1,32 +1,42 @@
 package org.example;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
+// CLASSE SIMPLES
+// Autor nao herda de nada, é só um molde com nome e títulos escritos
+// vai ser referenciado dentro de Livros (isso é Agregação)
 public class Autor {
+
+    // ENCAPSULAMENTO
+    // private significa que so a propria classe pode acessar diretamente
+    // o acesso de fora é feito pelos getters e setters
     private String nome;
-    // Collections: HashSet - Garante que cada título seja único (sem duplicatas)
-    private HashSet<String> titulosEscritos;
+    private List<String> titulosEscritos;
 
     public Autor(String nome) {
         this.nome = nome;
-        this.titulosEscritos = new HashSet<>();
+        // ArrayList é a lista mais comum do Java
+        // equivale ao List do C# ou ao array do Ruby
+        this.titulosEscritos = new ArrayList<>();
     }
 
+    // GETTER
+    // como nome é private, criamos um métod.o público pra lê-lo de fora
     public String getNome() {
         return nome;
     }
 
-    // Uso do HashSet
     public void adicionarTitulo(String titulo) {
-        if (titulosEscritos.add(titulo)) {
+        if (!titulosEscritos.contains(titulo)) {
+            titulosEscritos.add(titulo);
             System.out.println("[Autor] Título '" + titulo + "' adicionado com sucesso.");
         } else {
-            System.out.println("[Autor] Aviso: Título '" + titulo + "' já existe e não foi duplicado.");
+            System.out.println("[Autor] Aviso: Título '" + titulo + "' já existe.");
         }
     }
 
-    public HashSet<String> getTitulosEscritos() {
+    public List<String> getTitulosEscritos() {
         return titulosEscritos;
     }
 }
