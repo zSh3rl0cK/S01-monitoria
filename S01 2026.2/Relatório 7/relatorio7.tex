@@ -1,0 +1,504 @@
+% =====================================================================
+% RELATÓRIO 7 — POO com C#
+% Capítulo para ser incorporado à Apostila S01 (OO + PF), após o Relatório 6.
+% =====================================================================
+
+% ---------------------------------------------------------------------
+% Definições usadas neste capítulo (podem ser movidas para o preâmbulo).
+% - azulRelatorio: mesmo azul das caixas de exercício do Relatório 6.
+% - csharp: habilita a linguagem C# no listings e corrige a acentuação
+%   dentro dos códigos (evita o "A c e s s v e l" que aparece no Rel. 6).
+% - exercicio: caixa de exercício no mesmo padrão visual do Relatório 6.
+%   Se o preâmbulo já possuir um ambiente próprio para isso, basta
+%   trocar \begin{exercicio}{...} pelo ambiente existente.
+% ---------------------------------------------------------------------
+\definecolor{azulRelatorio}{rgb}{0.1,0.3,0.8}
+
+\lstdefinestyle{csharp}{
+    language=[Sharp]C,
+    morekeywords={get,set,var},
+    literate=
+        {á}{{\'a}}1 {à}{{\`a}}1 {ã}{{\~a}}1 {â}{{\^a}}1
+        {é}{{\'e}}1 {ê}{{\^e}}1 {í}{{\'\i}}1
+        {ó}{{\'o}}1 {õ}{{\~o}}1 {ô}{{\^o}}1 {ú}{{\'u}}1
+        {ç}{{\c{c}}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Ç}{{\c{C}}}1
+        {Ã}{{\~A}}1 {Â}{{\^A}}1 {Ê}{{\^E}}1
+        {—}{{\textemdash}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+}
+
+\newtcolorbox{exercicio}[1]{
+    colback=white,
+    colframe=azulRelatorio,
+    coltitle=white,
+    fonttitle=\normalfont,
+    boxrule=0.8pt,
+    arc=1.5mm,
+    title={#1}
+}
+
+\chapter{Relatório 7: Programação Orientada a Objetos em C\#}
+
+\section{Fundamentos Teóricos e Pilares da POO}
+
+No Relatório 6, os pilares da POO foram apresentados em C++, uma linguagem que exige controle
+manual da memória (\texttt{new} e \texttt{delete}). O \textbf{C\#} mantém os mesmos conceitos,
+mas automatiza a liberação de memória por meio do \textbf{Garbage Collector} (coletor de lixo)
+e oferece uma sintaxe mais enxuta, principalmente no uso de \textbf{propriedades} para o
+encapsulamento. Os quatro pilares continuam valendo, agora ilustrados com o inventário do herói
+Link, do universo de \textit{The Legend of Zelda}:
+
+\begin{itemize}
+    \item \textbf{Abstração}: Todo objeto do jogo é modelado apenas com o que importa para o
+    sistema. Um \texttt{Item} precisa somente de um \texttt{Nome} e de uma forma de ser usado.
+
+    \item \textbf{Encapsulamento}: O acesso aos dados é controlado por propriedades. O dano de
+    uma \texttt{Arma} pode ser lido por qualquer parte do programa, mas só pode ser alterado
+    pela própria classe.
+
+    \item \textbf{Herança}: \texttt{Arma} e \texttt{Escudo} reaproveitam a estrutura de
+    \texttt{Item} (relação ``\textbf{É UM}'': uma Arma é um Item).
+
+    \item \textbf{Polimorfismo}: Uma lista do tipo \texttt{Item} guarda armas, escudos e itens
+    comuns; ao chamar \texttt{Usar()}, cada objeto executa a sua própria versão do método.
+\end{itemize}
+
+Além dos pilares, este relatório introduz os \textbf{relacionamentos entre classes}, que
+descrevem como um objeto pode conter ou utilizar outros objetos (relação ``\textbf{TEM UM}''):
+
+\begin{itemize}
+    \item \textbf{Composição (relação forte)}: A parte não existe sem o todo. A parte é criada
+    \textbf{dentro} do objeto dono e ``morre'' junto com ele. Exemplo: o inventário de Link nasce
+    dentro do próprio herói.
+
+    \item \textbf{Agregação (relação fraca)}: A parte existe de forma independente do todo. O
+    objeto dono apenas \textbf{guarda uma referência} a um objeto criado fora dele. Exemplo: a
+    Master Sword é forjada antes e só depois é adicionada ao inventário de Link.
+\end{itemize}
+
+\section{Documentação Sintática das Estruturas de POO}
+
+Esta seção detalha todas as palavras-chave e construções sintáticas utilizadas na implementação
+de POO em C\#. Os exercícios deste relatório devem ser resolvidos \textbf{apenas} com as
+estruturas documentadas aqui.
+
+\subsection{Estrutura do Programa e Saída no Console}
+
+Todo programa C\# começa pelo método \texttt{Main}. As diretivas \texttt{using} importam os
+recursos da linguagem: \texttt{System} (para o \texttt{Console}) e
+\texttt{System.Collections.Generic} (para a \texttt{List}). O caractere \texttt{\$} antes das
+aspas ativa a \textbf{interpolação de strings}, permitindo inserir valores entre chaves
+diretamente no texto.
+
+\begin{lstlisting}[style=csharp]
+using System;
+using System.Collections.Generic;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        string heroi = "Link";
+        Console.WriteLine($"O herói se chama {heroi}."); // interpolação
+        Console.WriteLine("\n=== Fim ===");               // \n = quebra de linha
+    }
+}
+\end{lstlisting}
+
+\subsection{Declaração de Classe e Propriedades}
+
+Uma classe é declarada com a palavra-chave \texttt{class}. Em C\#, os atributos costumam ser
+expostos como \textbf{propriedades}, que controlam a leitura (\texttt{get}) e a escrita
+(\texttt{set}) de cada dado:
+
+\begin{lstlisting}[style=csharp]
+public class Magia
+{
+    // Leitura e escrita livres, com valor inicial "Nenhum"
+    public string Efeito { get; set; } = "Nenhum";
+}
+
+// Dentro da classe Arma:
+// Leitura livre, mas somente a própria classe pode alterar o valor
+public int DanoBase { get; private set; }
+
+// Dentro da classe Link:
+// Campo privado: invisível fora da classe (convenção: prefixo _)
+private List<Item> _inventario;
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{\{ get; set; \}}: A propriedade pode ser lida e alterada de qualquer ponto
+    do programa.
+
+    \item \texttt{\{ get; private set; \}}: A propriedade pode ser lida de qualquer ponto, mas
+    somente os métodos da própria classe podem alterá-la. Tentar alterá-la na \texttt{Main}
+    gera \textbf{erro de compilação}.
+
+    \item \texttt{= valor}: Define o valor inicial da propriedade no momento em que o objeto
+    é criado.
+
+    \item \texttt{private}: Membro acessível apenas pelos métodos da própria classe.
+\end{itemize}
+
+\subsection{Construtores e a Palavra-chave \texttt{this}}
+
+O construtor possui o mesmo nome da classe, não tem tipo de retorno e é executado
+automaticamente quando o objeto é criado com o operador \texttt{new}. A palavra-chave
+\texttt{this} referencia o próprio objeto que está sendo construído:
+
+\begin{lstlisting}[style=csharp]
+public Item(string nome)
+{
+    this.Nome = nome;
+    Console.WriteLine($"[Item] {Nome} foi criado.");
+}
+
+// Instanciação: o construtor é chamado automaticamente
+Item rupee = new Item("Rupee Azul");
+\end{lstlisting}
+
+Diferentemente do C++, não é necessário liberar a memória com \texttt{delete} nem declarar
+destrutores: o Garbage Collector remove automaticamente os objetos que não são mais utilizados.
+
+\subsection{Herança e Repasse ao Construtor Base (\texttt{: base(...)})}
+
+A herança é indicada por dois-pontos após o nome da classe filha. O construtor da filha repassa
+os parâmetros necessários ao construtor da classe pai com \texttt{: base(...)}:
+
+\begin{lstlisting}[style=csharp]
+public class Arma : Item   // Arma É UM Item
+{
+    public int DanoBase { get; private set; }
+
+    // "nome" vai para o construtor de Item; "dano" fica na Arma
+    public Arma(string nome, int dano) : base(nome)
+    {
+        this.DanoBase = dano;
+    }
+}
+\end{lstlisting}
+
+\subsection{Polimorfismo: \texttt{virtual} e \texttt{override}}
+
+\begin{itemize}
+    \item \texttt{virtual} (na classe base): Declara que o método \textbf{pode} ser reescrito
+    pelas classes filhas. Sem ele, o C\# sempre executaria a versão da classe pai.
+
+    \item \texttt{override} (na classe derivada): Indica que o método está, intencionalmente,
+    reescrevendo um método \texttt{virtual} da classe base.
+\end{itemize}
+
+\begin{lstlisting}[style=csharp]
+// Na Classe Base (Item):
+public virtual void Usar() { ... }
+
+// Na Classe Derivada (Arma):
+public override void Usar() { ... }
+\end{lstlisting}
+
+\subsection{Reaproveitando o Comportamento do Pai: \texttt{base.Metodo()}}
+
+Dentro de um método sobrescrito, \texttt{base.Metodo()} executa a versão da classe pai. Isso
+permite reaproveitar parte da lógica do pai e apenas \textbf{acrescentar} o comportamento
+específico da filha:
+
+\begin{lstlisting}[style=csharp]
+public override void Usar()
+{
+    base.Usar(); // executa primeiro o Usar() de Item
+    Console.WriteLine($"É um Escudo de Defesa: {Defesa}. Link se defende!");
+}
+\end{lstlisting}
+
+\subsection{Composição e Agregação}
+
+A diferença entre os dois relacionamentos está em \textbf{onde a parte é criada}:
+
+\begin{lstlisting}[style=csharp]
+// COMPOSIÇÃO: a Magia é criada DENTRO do construtor da Arma
+public Arma(string nome, int dano) : base(nome)
+{
+    this.DanoBase = dano;
+    this.MagiaAssociada = new Magia();
+}
+
+// AGREGAÇÃO: o Item é criado FORA de Link e apenas recebido como parâmetro
+public void AdicionarItem(Item item)
+{
+    this._inventario.Add(item);
+}
+\end{lstlisting}
+
+\subsection{Coleções Genéricas: \texttt{List<T>} e \texttt{foreach}}
+
+A \texttt{List<T>} é uma coleção de tamanho dinâmico, em que \texttt{T} é o tipo dos objetos
+armazenados. Uma lista do tipo da classe pai (\texttt{List<Item>}) aceita objetos de qualquer
+classe filha, o que possibilita o polimorfismo ao percorrê-la com \texttt{foreach}:
+
+\begin{lstlisting}[style=csharp]
+List<Item> inventario = new List<Item>(); // criação da lista vazia
+inventario.Add(new Arma("Master Sword", 30)); // adiciona um objeto
+Console.WriteLine($"Total: {inventario.Count}"); // quantidade de itens
+
+// Cada objeto executa a SUA versão de Usar()
+foreach (var item in inventario)
+{
+    item.Usar();
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{.Add(objeto)}: Insere um objeto no final da lista.
+    \item \texttt{.Count}: Retorna a quantidade de elementos da lista.
+    \item \texttt{foreach (var x in lista)}: Percorre a lista elemento por elemento; a
+    palavra \texttt{var} deixa o compilador deduzir o tipo da variável.
+    \item \texttt{if (a != b)}: Executa o bloco apenas se os valores forem diferentes.
+\end{itemize}
+
+\section{Código de Referência Completo}
+
+Abaixo está a implementação de referência utilizada para exemplificação do paradigma POO em
+C\#:
+
+\begin{lstlisting}[style=csharp, caption={Exemplo de Aplicação de POO em C\#}]
+using System;
+using System.Collections.Generic;
+
+// todo: CLASSE BASE
+// molde principal, todo item do jogo tem um nome
+// as classes filhas vão herdar daqui
+public class Item
+{
+    // todo: ENCAPSULAMENTO
+    // { get; set; } é a forma do C# de expor o atributo de forma controlada
+    // get = pode ler, set = pode alterar
+    public string Nome { get; set; }
+
+    // todo: CONSTRUTOR
+    // roda automaticamente quando o objeto é criado
+    public Item(string nome)
+    {
+        this.Nome = nome;
+        Console.WriteLine($"[Item] {Nome} foi criado.");
+    }
+
+    // todo: VIRTUAL
+    // avisa que as classes filhas podem reescrever esse método
+    // sem isso o C# ia sempre chamar essa versão aqui, ignorando as filhas
+    public virtual void Usar()
+    {
+        Console.WriteLine($"\n--- {Nome} ---");
+        Console.WriteLine("Usando um item genérico.");
+    }
+}
+
+// todo: CLASSE SEPARADA (sem herança)
+// Magia não é um Item, então não herda — é só uma classe independente
+// vai ser usada dentro de Arma mais pra frente (isso é Composição)
+public class Magia
+{
+    public string Efeito { get; set; } = "Nenhum";
+
+    public void Ativar()
+    {
+        Console.WriteLine($"Mágica ativada: {Efeito}!");
+    }
+}
+
+// todo: HERANÇA
+// Arma herda de Item, já nasce com o atributo Nome
+// a relação é: "Arma É UM Item"
+public class Arma : Item
+{
+    // private set = só a própria classe pode alterar o DanoBase
+    public int DanoBase { get; private set; }
+
+    // todo: COMPOSIÇÃO
+    // Arma tem uma Magia dentro dela
+    // quando a Arma é criada, a Magia nasce junto com ela
+    public Magia MagiaAssociada { get; set; }
+
+    // repassa o nome pro construtor do pai com : base(nome)
+    public Arma(string nome, int dano) : base(nome)
+    {
+        this.DanoBase = dano;
+        this.MagiaAssociada = new Magia();
+    }
+
+    // todo: SOBRESCRITA (override)
+    // reescreve o Usar() com o comportamento específico da Arma
+    // o override avisa o compilador que isso é intencional
+    public override void Usar()
+    {
+        Console.WriteLine($"\n--- {Nome} ---");
+        Console.WriteLine($"É uma Arma de Dano: {DanoBase}");
+
+        if (MagiaAssociada.Efeito != "Nenhum")
+        {
+            MagiaAssociada.Ativar();
+        }
+    }
+}
+
+// todo: HERANÇA
+// mesma ideia da Arma, só muda o atributo e o comportamento do Usar()
+public class Escudo : Item
+{
+    public int Defesa { get; private set; }
+
+    public Escudo(string nome, int defesa) : base(nome)
+    {
+        this.Defesa = defesa;
+    }
+
+    public override void Usar()
+    {
+        // todo: base.Usar()
+        // chama o Usar() do pai antes de adicionar o comportamento do Escudo
+        // útil quando você quer reaproveitar parte da lógica da classe pai
+        base.Usar();
+        Console.WriteLine($"É um Escudo de Defesa: {Defesa}. Link se defende!");
+    }
+}
+
+public class Link
+{
+    public string Nome { get; set; } = "Link";
+
+    // todo: COMPOSIÇÃO
+    // a lista nasce junto com Link e morre junto com ele
+    // não faz sentido existir inventário sem um herói dono dele
+    private List<Item> _inventario;
+
+    public Link()
+    {
+        this._inventario = new List<Item>();
+        Console.WriteLine($"\n[Link] O herói {Nome} foi criado.");
+    }
+
+    // todo: AGREGAÇÃO
+    // os itens existem fora de Link, ele só guarda uma referência pra eles
+    // masterSword e hylianShield foram criados antes e vivem independente do herói
+    public void AdicionarItem(Item item)
+    {
+        this._inventario.Add(item);
+    }
+
+    public void MostrarInventario()
+    {
+        Console.WriteLine($"\n{Nome} tem {_inventario.Count} itens no seu inventário:");
+
+        // todo: POLIMORFISMO EM AÇÃO
+        // o foreach trata tudo como Item, mas cada objeto roda o seu próprio Usar()
+        foreach (var item in _inventario)
+        {
+            item.Usar();
+        }
+    }
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        Console.WriteLine("=== Iniciando Aventura em Hyrule ===");
+
+        Arma masterSword = new Arma("Master Sword", 30);
+        masterSword.MagiaAssociada.Efeito = "Corte de Energia Sagrada";
+
+        Escudo hylianShield = new Escudo("Hylian Shield", 50);
+
+        Link linkHeroi = new Link();
+
+        linkHeroi.AdicionarItem(masterSword);
+        linkHeroi.AdicionarItem(hylianShield);
+        linkHeroi.AdicionarItem(new Item("Rupee Azul"));
+
+        linkHeroi.MostrarInventario();
+
+        Console.WriteLine("\n=== Fim da Demonstração ===");
+    }
+}
+\end{lstlisting}
+
+\section{Exercícios Práticos do Módulo}
+
+\begin{exercicio}{Exercício 1: Encapsulamento e Construtores (Defesa de Minas Tirith)}
+Durante o cerco a Minas Tirith, cada combatente convocado deve ser registrado com seu nome,
+povo, posto e o número do Círculo da cidade (de 1 a 7) que irá defender. Crie a classe
+\texttt{CombatenteDeGondor}:
+\begin{itemize}
+    \item Propriedades \texttt{Nome}, \texttt{Povo}, \texttt{Posto} (string) e
+    \texttt{Circulo} (int), todas com \texttt{private set}, inicializadas por um construtor
+    que imprime uma mensagem de convocação.
+    \item Propriedade \texttt{Armamento} com \texttt{private set} e valor inicial
+    ``Desarmado'', alterada somente pelo método \texttt{Equipar(string arma)}.
+    \item Método \texttt{ApresentarUnidade()}, que exibe os dados do combatente e só exibe o
+    armamento quando ele for diferente de ``Desarmado''.
+\end{itemize}
+Na \texttt{Main}, instancie Legolas (Elfo, Arqueiro, Círculo 1) equipado com o ``Arco dos
+Galadhrim'', Peregrin Took (Hobbit, Guarda da Cidadela, Círculo 7) sem armamento e um terceiro
+combatente à escolha. Chame \texttt{ApresentarUnidade()} em todos. Por fim, tente alterar
+\texttt{Posto} diretamente na \texttt{Main}, observe o erro de compilação e comente a linha.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 2: Herança e Polimorfismo (Batalha de Exibição Pokémon)}
+Crie a classe base \texttt{Pokemon} com as propriedades \texttt{Especie} (string) e
+\texttt{Nivel} (int, com \texttt{private set}), ambas recebidas no construtor, e o método
+virtual \texttt{EntrarEmCampo()}, que imprime a espécie, o nível e um ataque genérico
+(Investida). Derive as classes:
+\begin{itemize}
+    \item \texttt{TipoPlanta}, com a propriedade \texttt{GolpeEspecial} (string). Sobrescreva
+    \texttt{EntrarEmCampo()} \textbf{sem} chamar a versão do pai.
+    \item \texttt{TipoEletrico}, com a propriedade \texttt{Voltagem} (int, com
+    \texttt{private set}). Sobrescreva \texttt{EntrarEmCampo()} chamando
+    \texttt{base.EntrarEmCampo()} antes de exibir a descarga elétrica.
+\end{itemize}
+Na \texttt{Main}, crie uma \texttt{List<Pokemon>} com um Sceptile (\texttt{TipoPlanta}), um
+Jolteon (\texttt{TipoEletrico}) e um Eevee (\texttt{Pokemon} genérico). Exiba a quantidade de
+Pokémon em campo com \texttt{Count} e percorra a lista com \texttt{foreach} chamando
+\texttt{EntrarEmCampo()}.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 3: Composição e Agregação (O Grimório de Frieren)}
+A elfa Frieren carrega um grimório que nasce com ela e registra os feitiços que ela aprende
+(\textbf{composição}), e viaja com companheiros que existem independentemente dela
+(\textbf{agregação}). Implemente:
+\begin{itemize}
+    \item \texttt{Feitico}: propriedade \texttt{Nome} e método \texttt{Conjurar()}.
+    \item \texttt{Grimorio}: lista privada de \texttt{Feitico} criada no construtor; método
+    \texttt{Registrar(string nomeFeitico)}, que cria o \texttt{Feitico} \textbf{dentro} do
+    grimório; e método \texttt{ListarFeiticos()}, que exibe a quantidade e conjura cada um.
+    \item \texttt{Companheiro}: propriedades \texttt{Nome} e \texttt{Funcao}, e método
+    \texttt{Apresentar()}.
+    \item \texttt{Maga}: propriedade \texttt{Nome}, propriedade \texttt{Grimorio} (com
+    \texttt{private set}) criada no construtor, lista privada de \texttt{Companheiro} e os
+    métodos \texttt{RecrutarCompanheiro(Companheiro c)} e \texttt{MostrarGrupo()}.
+\end{itemize}
+Na \texttt{Main}, crie Fern (Maga Aprendiz) e Stark (Guerreiro) \textbf{antes} de Frieren,
+recrute ambos, registre três feitiços pelo grimório de Frieren, exiba o grupo e o grimório e,
+por fim, chame \texttt{Apresentar()} diretamente em Stark. Explique, em um comentário no código,
+qual relacionamento é composição e qual é agregação.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 4: Revisão Geral (Arquivos Proibidos da Miskatonic)}
+O bibliotecário Henry Armitage cataloga os relatos de entidades cósmicas guardados na
+Universidade Miskatonic. Implemente:
+\begin{itemize}
+    \item \texttt{EntidadeCosmica} (classe base, \textbf{não} abstrata): propriedades
+    \texttt{Nome} e \texttt{Origem} (valor inicial ``Desconhecida''), construtor que imprime o
+    registro da entidade e método virtual \texttt{Manifestar()}, que só exibe a origem quando
+    ela for diferente de ``Desconhecida''.
+    \item \texttt{Profundo}: propriedade \texttt{Profundidade} (int, com
+    \texttt{private set}); sobrescreve \texttt{Manifestar()} \textbf{sem} chamar o pai.
+    \item \texttt{MiGo}: propriedade \texttt{Artefato} (string); sobrescreve
+    \texttt{Manifestar()} chamando \texttt{base.Manifestar()} antes do seu comportamento.
+    \item \texttt{Pesquisador}: propriedade \texttt{Nome}, lista privada de
+    \texttt{EntidadeCosmica} criada no construtor (composição), método
+    \texttt{Catalogar(EntidadeCosmica e)} (agregação) e método \texttt{LerCatalogo()}
+    (polimorfismo com \texttt{foreach}).
+\end{itemize}
+Na \texttt{Main}, crie um \texttt{Profundo}, um \texttt{MiGo} com \texttt{Origem} igual a
+``Yuggoth'' e uma \texttt{EntidadeCosmica} genérica (``A Cor que Caiu do Espaço''); catalogue
+as três no pesquisador Henry Armitage e chame \texttt{LerCatalogo()}.
+\end{exercicio}
