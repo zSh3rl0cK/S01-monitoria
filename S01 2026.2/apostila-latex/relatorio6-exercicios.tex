@@ -1,0 +1,119 @@
+% =====================================================================
+% RELATÓRIO 6 — POO com C++: seção de exercícios (versão de 2026.2)
+% Substitui a seção "Exercícios Práticos do Módulo" do capítulo 1. O texto
+% segue os slides enviados aos alunos (Relatório 06/poo_cpp.pdf).
+%
+% As caixas usam o ambiente exercicioCpp, com o mesmo visual do ambiente
+% exercicio. Esse último só é criado no capítulo do Relatório 7, sem
+% proteção contra redefinição; por isso este arquivo não o define nem o usa.
+% Se o capítulo 1 já tiver um ambiente próprio para as caixas, basta
+% trocar \begin{exercicioCpp}{...} por ele.
+% =====================================================================
+\definecolor{azulRelatorio}{rgb}{0.1,0.3,0.8}
+
+\ifcsname exercicioCpp\endcsname\else
+\newtcolorbox{exercicioCpp}[1]{
+    colback=white,
+    colframe=azulRelatorio,
+    coltitle=white,
+    fonttitle=\normalfont,
+    boxrule=0.8pt,
+    arc=1.5mm,
+    title={#1}
+}
+\fi
+
+\section{Exercícios Práticos do Módulo}
+
+\begin{exercicioCpp}{Exercício 1: Classes, Objetos e Métodos (Duelo de Bandas)}
+Em um grande festival de música com um duelo de bandas, cada banda possui um nome, uma
+quantidade de integrantes, uma potência de som e um nível de energia da plateia. Implemente:
+
+\begin{itemize}
+    \item \texttt{Banda}: atributos \texttt{nome} (\texttt{string}), \texttt{integrantes}
+    (\texttt{int}), \texttt{potenciaSom} (\texttt{float}) e \texttt{energia} (\texttt{int}); e o
+    método \texttt{duelar()}, que recebe como parâmetro um objeto da classe \texttt{Banda} (a
+    rival), exibe uma mensagem confirmando a apresentação e subtrai o valor da
+    \texttt{potenciaSom} da \texttt{energia} da banda rival. Para que a energia da rival seja
+    alterada de fato, receba-a por referência: \texttt{duelar(Banda \&rival)}.
+\end{itemize}
+
+No programa principal, instancie dois objetos da classe \texttt{Banda} e atribua valores
+personalizados aos atributos de cada um. Execute o método \texttt{duelar()}, definindo qual
+banda será a desafiante e qual será a rival. Ao final, exiba o status atualizado das duas
+bandas, para ver como ficou a energia após o confronto.
+\end{exercicioCpp}
+
+\begin{exercicioCpp}{Exercício 2: Encapsulamento e Modificadores de Acesso (Links Sociais)}
+No jogo \textit{Persona}, a relação do protagonista com os seus aliados (os \textbf{Links
+Sociais}) evolui à medida que eles passam tempo juntos, alterando os seus níveis de afinidade
+de forma controlada. Implemente:
+
+\begin{itemize}
+    \item \texttt{LinkSocial}: atributos privados \texttt{nome} (\texttt{string}, o nome do
+    personagem), \texttt{arcana} (\texttt{string}, a arcana que representa o Link entre o
+    protagonista e o personagem) e \texttt{rank} (\texttt{int}); métodos públicos de acesso
+    (\textit{getters}) e de modificação (\textit{setters}) para cada atributo; e o método
+    \texttt{subirRank()}, que apenas incrementa em 1 o valor do atributo \texttt{rank}.
+\end{itemize}
+
+No programa principal, instancie um objeto da classe \texttt{LinkSocial} e use os
+\textit{setters} para definir o nome, a arcana e o rank inicial (por exemplo, 1) do personagem.
+Execute o método \texttt{subirRank()} e exiba os dados do Link Social usando os
+\textit{getters}, para confirmar o aumento do rank.
+\end{exercicioCpp}
+
+\begin{exercicioCpp}{Exercício 3: Herança e Sobrescrita (Membros do Inatel)}
+No Inatel, durante eventos acadêmicos e feiras tecnológicas como a FETIN, diferentes pessoas
+desempenham papéis essenciais na comunidade. Todos compartilham características de um membro
+da instituição, mas alunos e professores possuem atribuições e dados específicos dentro do
+campus. Implemente:
+
+\begin{itemize}
+    \item \texttt{MembroInatel} (classe base): atributo \texttt{nome} (\texttt{string}) e método
+    \texttt{seApresentar()}, que exibe ``Sou um membro da comunidade Inatel: [nome].''
+
+    \item \texttt{Aluno}: herda de \texttt{MembroInatel}, tem o atributo \texttt{curso}
+    (\texttt{string}) e sobrescreve \texttt{seApresentar()} para exibir ``Meu nome é [nome] e
+    estudo no curso de [curso].''
+
+    \item \texttt{Professor}: herda de \texttt{MembroInatel}, tem o atributo
+    \texttt{disciplina} (\texttt{string}) e sobrescreve \texttt{seApresentar()} para exibir
+    ``Meu nome é [nome] e leciono a disciplina de [disciplina].''
+\end{itemize}
+
+No programa principal, instancie um objeto da classe \texttt{Aluno} e um da classe
+\texttt{Professor} e atribua valores aos atributos de cada um. Chame o método
+\texttt{seApresentar()} de cada objeto, para demonstrar como a classe filha reutilizou e
+personalizou o comportamento da classe base.
+\end{exercicioCpp}
+
+\begin{exercicioCpp}{Exercício 4: Polimorfismo em Coleções (Ocupações da Comarca)}
+Na \textbf{Comarca}, a terra natal dos Hobbits, a vida é tranquila e cheia de tradições
+cotidianas. Embora todos compartilhem o amor pela paz e pela boa comida, cada Hobbit possui uma
+ocupação diferente para manter a comunidade funcionando. Implemente:
+
+\begin{itemize}
+    \item \texttt{Hobbit} (classe base): atributo \texttt{nome} (\texttt{string}) e método
+    virtual \texttt{fazerAtividade()}, que imprime ``O hobbit [nome] está aproveitando um dia
+    tranquilo na Comarca.''
+
+    \item \texttt{Jardineiro}: herda de \texttt{Hobbit} e sobrescreve
+    \texttt{fazerAtividade()} para exibir ``O jardineiro [nome] está cuidando das flores e
+    plantas ao redor das tocas!''
+
+    \item \texttt{Cozinheiro}: herda de \texttt{Hobbit} e sobrescreve
+    \texttt{fazerAtividade()} para exibir ``O cozinheiro [nome] está preparando o segundo café
+    da manhã para os convidados!''
+
+    \item \texttt{Fazendeiro}: herda de \texttt{Hobbit} e sobrescreve
+    \texttt{fazerAtividade()} para exibir ``O fazendeiro [nome] está colhendo vegetais e
+    hortaliças em suas terras!''
+\end{itemize}
+
+No programa principal, crie um vetor (ou lista) para armazenar os objetos do tipo
+\texttt{Hobbit}, usando ponteiros da classe base (\texttt{std::vector<Hobbit*>}). Crie uma
+instância de cada profissão (\texttt{Jardineiro}, \texttt{Cozinheiro} e \texttt{Fazendeiro}),
+com os seus respectivos nomes, e adicione-as ao vetor. Percorra o vetor e, para cada elemento,
+chame o método \texttt{fazerAtividade()}, para demonstrar o comportamento polimórfico.
+\end{exercicioCpp}
