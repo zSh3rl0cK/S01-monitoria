@@ -1,0 +1,978 @@
+% =====================================================================
+% RELATÓRIO 9 — POO com Ruby
+% Capítulo para ser incorporado à Apostila S01 (OO + PF), após o Relatório 8.
+% =====================================================================
+
+% ---------------------------------------------------------------------
+% Definições usadas neste capítulo (podem ser movidas para o preâmbulo).
+% - ruby: habilita a linguagem Ruby no listings e corrige a acentuação
+%   dentro dos códigos (mesma solução dos estilos csharp e python).
+% - azulRelatorio e exercicio: já são criados no Relatório 7. As linhas
+%   abaixo só os recriam se este capítulo for compilado sem ele.
+% ---------------------------------------------------------------------
+\lstdefinestyle{ruby}{
+    language=Ruby,
+    morekeywords={include,raise},
+    literate=
+        {á}{{\'a}}1 {à}{{\`a}}1 {ã}{{\~a}}1 {â}{{\^a}}1
+        {é}{{\'e}}1 {ê}{{\^e}}1 {è}{{\`e}}1 {í}{{\'\i}}1
+        {ó}{{\'o}}1 {õ}{{\~o}}1 {ô}{{\^o}}1 {ú}{{\'u}}1
+        {ç}{{\c{c}}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Ç}{{\c{C}}}1
+        {Ã}{{\~A}}1 {Â}{{\^A}}1 {Ê}{{\^E}}1 {Õ}{{\~O}}1
+        {—}{{\textemdash}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+}
+
+\definecolor{azulRelatorio}{rgb}{0.1,0.3,0.8}
+
+\ifcsname exercicio\endcsname\else
+\newtcolorbox{exercicio}[1]{
+    colback=white,
+    colframe=azulRelatorio,
+    coltitle=white,
+    fonttitle=\normalfont,
+    boxrule=0.8pt,
+    arc=1.5mm,
+    title={#1}
+}
+\fi
+
+\chapter{Relatório 9: Programação Orientada a Objetos em Ruby}
+
+\section{Fundamentos Teóricos e Pilares da POO}
+
+Nos Relatórios 6 a 8, os pilares da POO foram apresentados em C++, C\# e Python. O Python mostrou
+que boa parte das palavras-chave (\texttt{private}, \texttt{virtual}, \texttt{override}) pode ser
+trocada por convenções. O \textbf{Ruby} vai além: nele, \textbf{tudo é objeto}, inclusive
+números, textos e as próprias classes, e a sintaxe foi desenhada para ser lida quase como uma
+frase em inglês. Os blocos não usam chaves nem dependem da indentação: eles terminam com a
+palavra \texttt{end}. Os objetos são criados com \texttt{.new}, e os atributos começam com
+\texttt{@} e \textbf{nunca} podem ser acessados diretamente de fora do objeto: a própria classe
+decide o que expor, criando métodos. Assim como no C\# e no Python, a memória é liberada
+automaticamente pelo \textbf{Garbage Collector}.
+
+A tabela abaixo relaciona as estruturas já vistas em Python com as equivalentes em Ruby:
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Conceito} & \textbf{Python (Relatório 8)} & \textbf{Ruby (Relatório 9)} \\
+\hline
+Construtor & \texttt{def \_\_init\_\_(self, nome)} & \texttt{def initialize(nome)} \\
+Atributo do objeto & \texttt{self.nome} & \texttt{@nome} \\
+Instanciação & \texttt{Item(nome)} & \texttt{Item.new(nome)} \\
+Atributo privado & prefixo \texttt{\_\_} (convenção) & toda variável \texttt{@} \\
+Getter simples & \texttt{def get\_nome(self)} & \texttt{attr\_reader :nome} \\
+Setter & \texttt{arma.set\_dano(20)} & \texttt{arma.dano = 20} \\
+Herança & \texttt{class Arma(Item)} & \texttt{class Arma < Item} \\
+Construtor do pai & \texttt{super().\_\_init\_\_(nome)} & \texttt{super(nome)} \\
+Método do pai & \texttt{super().usar()} & \texttt{super} \\
+Interface & \texttt{ABC} + \texttt{@abstractmethod} & \texttt{module} + \texttt{include} \\
+Coleção & \texttt{list} e \texttt{.append()} & \texttt{Array} e \texttt{<{}<} \\
+Repetição & \texttt{for x in lista:} & \texttt{lista.each do |x| ... end} \\
+Fim de bloco & indentação & \texttt{end} \\
+\hline
+\end{tabular}
+\end{center}
+
+Os quatro pilares continuam valendo, agora ilustrados com o universo do anime
+\textit{Gachiakuta}. Nele, a sociedade se divide entre quem vive nas alturas e quem é jogado no
+\textbf{Abismo}, um lugar cheio de lixo. Lá vivem os \textbf{Catadores}, que dão vida a objetos
+descartados, chamados \textbf{Utensílios}, e se organizam em grupos de \textbf{Zeladores}:
+
+\begin{itemize}
+    \item \textbf{Abstração}: Cada objeto guarda apenas o que importa para a história. Um
+    \texttt{Habitante} do Abismo precisa de nome, origem e força.
+
+    \item \textbf{Encapsulamento}: A força fica no atributo interno \texttt{@\_forca}, que só
+    pode ser lido e alterado pelos métodos \texttt{forca} e \texttt{forca=}, e o setter recusa
+    valores inválidos. Já o nome e a origem podem ser lidos de fora, mas não alterados.
+
+    \item \textbf{Herança}: \texttt{Catador} reaproveita a estrutura de \texttt{Habitante}
+    (relação ``\textbf{É UM}'': um Catador é um Habitante).
+
+    \item \textbf{Polimorfismo}: O grupo de Zeladores percorre os seus membros chamando
+    \texttt{atacar}, e cada objeto executa a sua própria versão do método.
+\end{itemize}
+
+\subsection{Módulos: Contratos e Mixins}
+
+A novidade deste relatório é a forma como o Ruby trata as interfaces. Ele não tem a
+palavra-chave \texttt{interface}, como o C\#, nem classes abstratas nativas, como o \texttt{ABC}
+do Python. Em seu lugar, usa \textbf{módulos}: blocos de métodos que qualquer classe pode
+\textbf{incluir} com \texttt{include}. Um módulo pode ter dois papéis:
+
+\begin{itemize}
+    \item \textbf{Contrato}: o módulo declara um método que só lança um
+    \texttt{NotImplementedError}, e a classe que inclui o módulo deve escrever a sua própria
+    versão do método. No código de referência, \texttt{CapacidadeEspirito} exige que o
+    \texttt{Catador} implemente \texttt{invocar\_espirito}.
+
+    \item \textbf{Mixin}: o módulo já traz o método pronto, e toda classe que o incluir ganha
+    esse comportamento sem precisar reescrevê-lo. No código de referência,
+    \texttt{CapacidadeCombate} dá o método \texttt{entrar\_em\_combate} ao \texttt{Catador}.
+\end{itemize}
+
+Uma classe pode incluir vários módulos ao mesmo tempo. Essa é a alternativa do Ruby à herança
+múltipla vista no Python: uma classe tem um único pai, mas pode somar os comportamentos de
+quantos módulos precisar.
+
+Há uma diferença importante em relação ao Relatório 8. No Python, o \texttt{ABC} impede que um
+objeto seja criado se faltar algum método abstrato. O Ruby \textbf{não confere nada
+antecipadamente}: o objeto é criado normalmente, e o \texttt{NotImplementedError} só aparece no
+momento em que o método que falta é chamado. Por isso, em Ruby, o que importa é se o objeto
+\textbf{sabe responder} a um método, e não de qual classe ele é. Essa ideia é chamada de
+\textit{duck typing} (``se anda como um pato e grasna como um pato, então é um pato''), e o
+método \texttt{respond\_to?} permite fazer essa pergunta ao objeto.
+
+\subsection{Relacionamentos entre Classes}
+
+A composição e a agregação, vistas nos relatórios anteriores, continuam valendo (relação
+``\textbf{TEM UM}''):
+
+\begin{itemize}
+    \item \textbf{Composição (relação forte)}: A parte é criada \textbf{dentro} do objeto dono e
+    ``morre'' junto com ele. Exemplo: o Utensílio nasce dentro do \texttt{initialize} do próprio
+    Catador.
+
+    \item \textbf{Agregação (relação fraca)}: A parte é criada \textbf{fora} e o dono apenas
+    guarda uma referência a ela. Exemplo: os Catadores são criados antes e só depois são
+    entregues ao grupo de Zeladores, e continuam existindo se o grupo deixar de existir.
+\end{itemize}
+
+\section{Documentação Sintática das Estruturas de POO}
+
+Esta seção detalha todas as palavras-chave e construções sintáticas utilizadas na implementação
+de POO em Ruby. Os exercícios deste relatório devem ser resolvidos \textbf{apenas} com as
+estruturas documentadas aqui.
+
+\subsection{Estrutura do Programa e Saída no Console}
+
+O Ruby não tem uma função \texttt{main}: o arquivo é executado de cima para baixo, e o código
+solto depois das classes funciona como programa principal. Comentários começam com \texttt{\#}.
+Blocos (classes, métodos, \texttt{if}, laços) terminam com \texttt{end}. O \texttt{puts} imprime
+um valor e pula uma linha. Dentro de aspas duplas, \texttt{\#\{...\}} insere um valor no texto
+(\textbf{interpolação}), como a f-string do Python.
+
+\begin{lstlisting}[style=ruby]
+# comentários começam com #
+heroi = "Rudo"
+puts "O herói se chama #{heroi}."   # interpolação com #{}
+puts "Origem: " + "Aoiro"           # + junta dois textos
+puts "\n--- Fim ---"                # \n = quebra de linha
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{Variáveis}: Não têm tipo declarado. Basta atribuir um valor, como em
+    \texttt{heroi = ...}.
+
+    \item \textbf{Parênteses opcionais}: Em uma chamada de método, os parênteses podem ser
+    omitidos. \texttt{puts x} e \texttt{puts(x)} fazem a mesma coisa.
+
+    \item \texttt{+}: Entre dois textos, junta os dois em um texto só.
+\end{itemize}
+
+\subsection{Declaração de Classe, \texttt{initialize} e Atributos com \texttt{@}}
+
+Uma classe é declarada com \texttt{class} e termina com \texttt{end}. O construtor é o método
+\texttt{initialize}, executado automaticamente quando o objeto é criado com \texttt{.new}. Os
+atributos do objeto são as variáveis que começam com \texttt{@} (\textbf{variáveis de
+instância}). Elas não precisam ser declaradas antes: basta atribuir um valor.
+
+\begin{lstlisting}[style=ruby]
+class Utensilio
+
+  # roda automaticamente quando o objeto é criado com .new
+  def initialize(nome, tipo)
+    @nome = nome   # @ indica um atributo do próprio objeto
+    @tipo = tipo
+  end
+
+  # a última expressão do método é o seu valor de retorno
+  def mostrar_detalhes
+    "Utensilio #{@nome} do tipo #{@tipo}."
+  end
+end
+
+luvas = Utensilio.new("Luvas", "Ofensiva")  # instanciação
+puts luvas.mostrar_detalhes
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{def ... end}: Declara um método. Um método sem parâmetros dispensa os
+    parênteses, tanto na declaração quanto na chamada (\texttt{luvas.mostrar\_detalhes}).
+
+    \item \texttt{initialize}: O construtor, equivalente ao \texttt{\_\_init\_\_} do Python.
+    Diferente do Python, ele não recebe o \texttt{self} como parâmetro.
+
+    \item \texttt{@nome}: Variável de instância. Cada objeto tem a sua própria cópia, que existe
+    enquanto o objeto existir.
+
+    \item \texttt{.new}: Cria o objeto e chama o \texttt{initialize} com os argumentos
+    recebidos.
+
+    \item \textbf{Retorno implícito}: O método retorna o valor da sua última expressão, sem
+    precisar de \texttt{return}. A palavra \texttt{return} também existe e pode ser usada para
+    sair antes do fim do método.
+
+    \item \texttt{self}: Dentro de um método, referencia o próprio objeto (como o \texttt{self}
+    do Python e o \texttt{this} do C\#), mas não aparece nos parâmetros. A expressão
+    \texttt{self.class} (ou \texttt{objeto.class}) retorna a classe do objeto, e dentro de um
+    texto ela aparece como o nome da classe, como em \texttt{\#\{self.class\}}.
+\end{itemize}
+
+\subsection{Encapsulamento: \texttt{attr\_reader}, \texttt{attr\_writer} e
+\texttt{attr\_accessor}}
+
+Em Ruby, toda variável de instância é \textbf{inacessível de fora do objeto}: não existe sintaxe
+para ler um atributo com \texttt{@} de fora da classe. O nível de acesso é decidido pelos
+\textbf{métodos} que a classe oferece. Para não ser preciso escrever um getter para cada
+atributo, o Ruby oferece atalhos que criam esses métodos automaticamente:
+
+\begin{lstlisting}[style=ruby]
+class Habitante
+  attr_reader :nome, :origem   # cria os métodos nome e origem
+
+  def initialize(nome, origem, forca_inicial)
+    @nome = nome
+    @origem = origem
+    @_forca = forca_inicial     # interno: não ganhou attr_reader
+  end
+end
+
+barado = Habitante.new("Barado", "Superficie", 800)
+puts barado.nome         # funciona: attr_reader criou o método nome
+barado.nome = "Outro"    # NoMethodError: o método nome= não existe
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{attr\_reader :nome}: Cria apenas o getter \texttt{nome}. De fora, o atributo
+    pode ser lido, mas não alterado.
+
+    \item \texttt{attr\_writer :nome}: Cria apenas o setter \texttt{nome=}.
+
+    \item \texttt{attr\_accessor :nome}: Cria os dois. No código de referência, é usado no
+    \texttt{utensilio} do \texttt{Catador}.
+
+    \item \texttt{:nome}: Um \textbf{símbolo}, isto é, um nome fixo precedido de dois-pontos. Os
+    símbolos são usados para se referir a métodos e atributos pelo nome.
+
+    \item \texttt{@\_forca}: O \texttt{\_} não muda nada para o Ruby, porque toda variável com
+    \texttt{@} já é inacessível de fora. Ele é só uma convenção, usada no código de referência,
+    para destacar um atributo interno, que não ganhou \texttt{attr\_reader} e só é acessado
+    pelos métodos da própria classe.
+
+    \item \texttt{NoMethodError}: Erro lançado quando se chama um método que o objeto não
+    possui, como \texttt{nome=} em uma classe que só tem \texttt{attr\_reader :nome}.
+\end{itemize}
+
+\subsection{Getters e Setters Manuais}
+
+Quando o atributo precisa de validação, o getter e o setter são escritos à mão. O setter é um
+método cujo nome termina com \texttt{=}; por isso, ele é chamado com a mesma sintaxe de uma
+atribuição:
+
+\begin{lstlisting}[style=ruby]
+def forca              # getter: devolve o atributo interno
+  @_forca
+end
+
+def forca=(novo_valor) # setter: o nome termina com =
+  if novo_valor.is_a?(Numeric) && novo_valor.positive?
+    @_forca = novo_valor
+  end
+end
+
+rudo.forca = 1100      # chama o setter forca=
+puts rudo.forca        # chama o getter forca
+\end{lstlisting}
+
+No código de referência, um valor inválido é simplesmente ignorado. Para avisar o usuário, basta
+acrescentar um \texttt{else}. O exemplo abaixo é complementar e não faz parte do código de
+referência:
+
+\begin{lstlisting}[style=ruby]
+def forca=(novo_valor)
+  if novo_valor > 0
+    @_forca = novo_valor
+  else
+    puts "A força deve ser positiva!"
+  end
+end
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{if}, \texttt{elsif}, \texttt{else} e \texttt{end}: Estruturas de decisão.
+
+    \item \textbf{Comparações}: \texttt{==}, \texttt{!=}, \texttt{>}, \texttt{<}, \texttt{>=} e
+    \texttt{<=}. Condições podem ser combinadas com \texttt{\&\&} (e), \texttt{||} (ou) e
+    \texttt{!} (não), como em \texttt{x >= 1 \&\& x <= 10}.
+
+    \item \texttt{is\_a?(Classe)}: Retorna \texttt{true} se o objeto for da classe informada ou
+    de uma filha dela (o equivalente ao \texttt{isinstance} do Python). \texttt{Numeric} é a
+    classe de todos os números.
+
+    \item \texttt{positive?}: Retorna \texttt{true} se o número for maior que zero. Por
+    convenção, os métodos terminados em \texttt{?} respondem sim ou não (\texttt{true} ou
+    \texttt{false}).
+
+    \item \textbf{Setter dentro da própria classe}: Deve ser chamado como
+    \texttt{self.forca = valor}. Sem o \texttt{self.}, o Ruby entende que
+    \texttt{forca = valor} cria uma variável local, e o setter não é executado.
+\end{itemize}
+
+\subsection{Herança e \texttt{super(...)} no \texttt{initialize}}
+
+A classe pai é indicada com \texttt{<} depois do nome da classe filha. Para inicializar a parte
+herdada, a filha chama \texttt{super(...)} dentro do seu \texttt{initialize}, repassando os
+parâmetros de que o pai precisa (o equivalente ao \texttt{super().\_\_init\_\_(...)} do Python e
+ao \texttt{: base(...)} do C\#):
+
+\begin{lstlisting}[style=ruby]
+class Catador < Habitante   # Catador É UM Habitante
+
+  def initialize(nome, origem, forca_inicial, nome_utensilio,
+                 tipo_utensilio)
+    # nome, origem e forca_inicial vão para o initialize de Habitante
+    super(nome, origem, forca_inicial)
+    @utensilio = Utensilio.new(nome_utensilio, tipo_utensilio)
+  end
+end
+\end{lstlisting}
+
+Se a filha \textbf{não} define um \texttt{initialize}, ela herda automaticamente o do pai e é
+criada com os mesmos parâmetros. O exemplo abaixo é complementar e não faz parte do código de
+referência:
+
+\begin{lstlisting}[style=ruby]
+class Andarilho < Habitante   # sem initialize próprio
+  def atacar
+    puts "#{nome} arremessa uma pedra!"
+  end
+end
+
+# usa o initialize herdado de Habitante
+andarilho = Andarilho.new("Andarilho", "Abismo", 500)
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{class Filha < Pai}: Declara a herança (relação ``É UM'').
+
+    \item \textbf{O que é herdado}: A filha herda os métodos do pai, inclusive os criados por
+    \texttt{attr\_reader}. Por isso, o \texttt{Andarilho} pode usar \texttt{nome} diretamente.
+
+    \item \textbf{Variáveis com} \texttt{@}: Pertencem ao objeto, e não à classe que as criou.
+    Diferente do \texttt{\_\_} do Python, a filha enxerga as variáveis criadas no
+    \texttt{initialize} do pai.
+\end{itemize}
+
+\subsection{Sobrescrita e \texttt{super} em Métodos}
+
+Em Ruby não existem \texttt{virtual} nem \texttt{override}: qualquer método pode ser
+sobrescrito. Basta a classe filha definir um método com o \textbf{mesmo nome} do método do pai:
+
+\begin{lstlisting}[style=ruby]
+# Na Classe Base (Habitante):
+def atacar
+  puts "#{nome} desfere um golpe basico!"
+end
+
+# Na Classe Derivada (Catador):
+def atacar
+  puts "#{nome} ataca usando o utensilio #{@utensilio.nome}!"
+  puts "  [Tipo: #{@utensilio.tipo}]"
+end
+\end{lstlisting}
+
+Dentro do método sobrescrito, a palavra \texttt{super} executa a versão do pai (o equivalente ao
+\texttt{super().metodo()} do Python e ao \texttt{base.Metodo()} do C\#). Se a versão do pai
+\textbf{retorna} um texto, a filha pode reaproveitá-lo e apenas acrescentar o que é dela. O
+exemplo abaixo é complementar e não faz parte do código de referência:
+
+\begin{lstlisting}[style=ruby]
+# Na Classe Base (Habitante): retorna um texto
+def apresentacao
+  "#{nome}, vindo de #{origem}"
+end
+
+# Na Classe Derivada (Catador): reaproveita o texto do pai
+def apresentacao
+  super + " | Utensilio: #{@utensilio.nome}"
+end
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{super} (sem parênteses): Chama o método de mesmo nome no pai, repassando os
+    mesmos argumentos que o método atual recebeu.
+
+    \item \texttt{super()}: Chama o método do pai sem nenhum argumento.
+
+    \item \texttt{super(a, b)}: Chama o método do pai com os argumentos informados. É a forma
+    usada no \texttt{initialize} do \texttt{Catador}.
+\end{itemize}
+
+\subsection{Módulos como Contrato: \texttt{module}, \texttt{include} e
+\texttt{NotImplementedError}}
+
+Um módulo é declarado com \texttt{module} e incluído em uma classe com \texttt{include}. Para
+funcionar como contrato, o método do módulo apenas lança um \texttt{NotImplementedError}. A
+classe que inclui o módulo escreve a sua própria versão do método, que tem prioridade sobre a do
+módulo:
+
+\begin{lstlisting}[style=ruby]
+module CapacidadeEspirito
+  def invocar_espirito
+    raise NotImplementedError,
+          "#{self.class} deve implementar invocar_espirito"
+  end
+end
+
+class Catador < Habitante
+  include CapacidadeEspirito   # "assina" o contrato
+
+  def invocar_espirito         # cumpre o contrato
+    puts "#{nome} invoca o espirito do utensilio! Poder: #{forca * 5}"
+  end
+end
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{module Nome ... end}: Declara o módulo. O nome começa com letra maiúscula,
+    como o de uma classe, mas um módulo não pode ser instanciado com \texttt{.new}.
+
+    \item \texttt{include Modulo}: Acrescenta os métodos do módulo à classe. Os objetos da
+    classe passam a responder a esses métodos.
+
+    \item \texttt{raise Erro, mensagem}: Lança um erro e interrompe o programa, exibindo a
+    mensagem. A mensagem é opcional: \texttt{raise NotImplementedError} sozinho também funciona.
+
+    \item \texttt{NotImplementedError}: Erro que indica um método ainda não implementado.
+
+    \item \textbf{Prioridade}: Quando a classe e o módulo têm um método com o mesmo nome, vale a
+    versão da classe. Por isso, o \texttt{invocar\_espirito} do \texttt{Catador} substitui o do
+    módulo.
+\end{itemize}
+
+O Ruby não verifica o contrato antes da hora. O mesmo \texttt{raise NotImplementedError} pode
+ser usado diretamente em um método de uma classe base, para indicar que as filhas devem
+sobrescrevê-lo, mas a classe base continua podendo ser instanciada. O exemplo abaixo é
+complementar e não faz parte do código de referência:
+
+\begin{lstlisting}[style=ruby]
+class Criatura
+  def rugir
+    raise NotImplementedError, "Cada criatura ruge do seu jeito"
+  end
+end
+
+mancha = Criatura.new   # funciona: o objeto é criado normalmente
+mancha.rugir            # NotImplementedError: o erro só aparece aqui
+\end{lstlisting}
+
+\subsection{Módulos com Implementação Pronta (Mixins)}
+
+Um módulo também pode trazer métodos completos. Toda classe que o incluir ganha esse
+comportamento pronto, e uma mesma classe pode incluir quantos módulos precisar:
+
+\begin{lstlisting}[style=ruby]
+module CapacidadeCombate
+  def entrar_em_combate
+    puts "#{self.class} entra em postura de combate!"
+  end
+end
+
+class Catador < Habitante
+  include CapacidadeEspirito
+  include CapacidadeCombate    # uma classe, vários módulos
+end
+\end{lstlisting}
+
+Dentro de um método de módulo, \texttt{self} é o objeto que está executando o método, ou seja,
+um objeto da classe que incluiu o módulo. Por isso, o módulo pode chamar os métodos desse objeto,
+como um getter criado por \texttt{attr\_reader}, desde que a classe que o incluir tenha esse
+método. O exemplo abaixo é complementar e não faz parte do código de referência:
+
+\begin{lstlisting}[style=ruby]
+module Rastreavel
+  def emitir_sinal
+    # nome vem do attr_reader da classe que incluir o módulo
+    puts "Sinal de #{nome} detectado no Abismo!"
+  end
+end
+\end{lstlisting}
+
+\subsection{Composição e Agregação}
+
+A diferença entre os dois relacionamentos está em \textbf{onde a parte é criada}:
+
+\begin{lstlisting}[style=ruby]
+# COMPOSIÇÃO: o Utensilio é criado DENTRO do initialize do Catador
+@utensilio = Utensilio.new(nome_utensilio, tipo_utensilio)
+
+# AGREGAÇÃO: os Catadores são criados FORA e só recebidos pelo grupo
+grupo = GrupoDeZeladores.new([rudo, enjin])
+\end{lstlisting}
+
+\subsection{Arrays: Criação, \texttt{<{}<} e \texttt{.each}}
+
+O \texttt{Array} é a coleção de tamanho dinâmico do Ruby, equivalente à \texttt{list} do Python.
+Como a tipagem é dinâmica, um mesmo array pode guardar objetos de classes diferentes, o que
+possibilita o polimorfismo ao percorrê-lo:
+
+\begin{lstlisting}[style=ruby]
+catadores = []           # array vazio
+catadores << rudo        # adiciona no final
+catadores.push(enjin)    # mesma coisa que <<
+puts catadores.length    # quantidade de elementos
+
+catadores.each do |c|    # percorre elemento por elemento
+  c.atacar
+end
+
+catadores.each { |c| c.atacar }   # a mesma coisa, em uma linha
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{[]}: Cria um array vazio. \texttt{[a, b]} cria um array já preenchido.
+
+    \item \texttt{array <{}< objeto} e \texttt{array.push(objeto)}: Inserem um objeto no final do
+    array.
+
+    \item \texttt{array.length} (ou \texttt{array.size}): Retorna a quantidade de elementos.
+
+    \item \texttt{.each}: Executa o \textbf{bloco} uma vez para cada elemento. O bloco pode ser
+    escrito entre \texttt{do} e \texttt{end} ou entre chaves, e \texttt{|c|} declara a variável
+    que recebe o elemento da vez.
+
+    \item \texttt{def initialize(catadores = [])}: Um parâmetro pode ter \textbf{valor padrão},
+    usado quando o argumento não é informado.
+
+    \item \texttt{puts array}: Imprime cada elemento do array em uma linha.
+\end{itemize}
+
+\subsection{Transformar e Filtrar: \texttt{.map}, \texttt{.select} e \texttt{respond\_to?}}
+
+Além do \texttt{.each}, os arrays têm métodos que percorrem os elementos e devolvem um
+\textbf{novo} array, sem alterar o original. As duas primeiras linhas de código do exemplo
+abaixo são complementares e não fazem parte do código de referência:
+
+\begin{lstlisting}[style=ruby]
+# .map: novo array com o resultado do bloco para cada elemento
+nomes = catadores.map { |c| c.nome }
+
+# .select: novo array só com os elementos aprovados pelo bloco
+fortes = catadores.select { |c| c.forca > 1000 }
+
+# introspecção: seleciona só quem possui o método entrar_em_combate
+combatentes = @catadores.select { |c| c.respond_to?(:entrar_em_combate) }
+combatentes.each(&:entrar_em_combate)
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{.map}: Devolve um novo array, do mesmo tamanho do original, com o valor da
+    última expressão do bloco para cada elemento.
+
+    \item \texttt{.select}: Devolve um novo array só com os elementos para os quais o bloco
+    resultou em \texttt{true}.
+
+    \item \texttt{objeto.respond\_to?(:metodo)}: Retorna \texttt{true} se o objeto possui o
+    método informado, inclusive quando ele veio de um módulo. É a forma de perguntar ao objeto
+    o que ele sabe fazer (\textbf{introspecção}).
+
+    \item \texttt{each(\&:metodo)}: Atalho para \texttt{each \{ |c| c.metodo \}}, que chama o
+    método informado em cada elemento.
+\end{itemize}
+
+\section{Código de Referência Completo}
+
+Abaixo está a implementação de referência utilizada para exemplificação do paradigma POO em
+Ruby:
+
+\begin{lstlisting}[style=ruby, caption={Exemplo de Aplicação de POO em Ruby}]
+# ------- Contexto: Gachiakuta ---------
+# No mundo de Gachiakuta, a sociedade é dividida entre quem vive nas
+# alturas e quem é jogado no Abismo — um lugar repleto de lixo e
+# criaturas chamadas Manchas.
+# Os Catadores são habitantes do Abismo que aprenderam a dar vida a
+# objetos descartados, chamados Utensílios, usando o poder do espírito.
+# Organizados em grupos de Zeladores, eles partem em missões para
+# sobreviver e recuperar o que foi perdido nas profundezas.
+
+
+# MÓDULOS (funcionam como interfaces em outras linguagens)
+# definem um comportamento que qualquer classe pode "incluir"
+# a classe que incluir este módulo deve implementar invocar_espirito;
+# o Ruby não confere isso antes: o erro só aparece quando o método
+# for chamado em um objeto que não o implementou
+module CapacidadeEspirito
+  def invocar_espirito
+    raise NotImplementedError,
+          "#{self.class} deve implementar invocar_espirito"
+  end
+end
+
+# MÓDULO DE COMBATE
+# outro módulo, mas esse já traz a implementação pronta
+# qualquer classe que incluir CapacidadeCombate ganha o
+# entrar_em_combate() de graça
+module CapacidadeCombate
+  def entrar_em_combate
+    puts "#{self.class} entra em postura de combate!"
+  end
+end
+
+
+# COMPOSIÇÃO
+# Utensilio não existe sozinho fora do Catador
+# ele nasce e morre junto com ele
+class Utensilio
+  attr_reader :nome, :tipo
+
+  # Construtor
+  def initialize(nome, tipo)
+    @nome = nome
+    @tipo = tipo
+  end
+
+  def mostrar_detalhes
+    "Utensilio #{@nome} do tipo #{@tipo}."
+  end
+end
+
+
+# CLASSE BASE
+# molde principal de todo habitante do Abismo
+# as classes filhas vão herdar daqui
+class Habitante
+
+  # ENCAPSULAMENTO
+  # em Ruby, toda variável de instância (as que começam com @) já é
+  # inacessível de fora da classe: só dá para lê-la ou alterá-la por
+  # meio de métodos
+  # attr_reader cria apenas o getter para nome e origem: de fora, eles
+  # podem ser lidos, mas não alterados
+  # o _ em @_forca não muda nada para o Ruby: é só uma convenção para
+  # indicar um atributo interno, que não ganhou attr_reader
+  # como precisamos de validação na força (precisa ser um número
+  # positivo), criamos getter e setter manuais
+  attr_reader :nome, :origem
+
+  def initialize(nome, origem, forca_inicial)
+    @nome = nome
+    @origem = origem
+    @_forca = forca_inicial
+  end
+
+  # GETTER e SETTER manual
+  # como @_forca é interno, criamos métodos pra ler e alterar ele de
+  # forma controlada
+  def forca
+    @_forca
+  end
+
+  def forca=(novo_valor)
+    # o if aqui funciona igual ao de outras linguagens:
+    # só atualiza @_forca se novo_valor for um número positivo
+    if novo_valor.is_a?(Numeric) && novo_valor.positive?
+      @_forca = novo_valor
+    end
+  end
+
+  # VIRTUAL (equivalente)
+  # método que as classes filhas vão sobrescrever com o comportamento
+  # específico delas
+  def atacar
+    puts "#{nome} desfere um golpe basico!"
+  end
+end
+
+
+# HERANÇA + MÓDULOS
+# Catador herda de Habitante e inclui os dois módulos
+# por isso deve implementar invocar_espirito (contrato do módulo)
+class Catador < Habitante
+  include CapacidadeEspirito
+  include CapacidadeCombate
+
+  # attr_accessor é como ter attr_reader e attr_writer juntos
+  # ou seja, pode ler E alterar o utensílio de fora da classe
+  # usamos accessor aqui porque o Catador pode trocar de Utensílio
+  attr_accessor :utensilio
+
+  # SUPER
+  # super chama o initialize do pai (Habitante) passando os dados que
+  # ele precisa
+  # depois inicializamos o que é específico do Catador
+  def initialize(nome, origem, forca_inicial, nome_utensilio, tipo_utensilio)
+    super(nome, origem, forca_inicial)
+
+    # COMPOSIÇÃO em ação
+    # Utensilio é criado aqui dentro, ele pertence ao Catador
+    @utensilio = Utensilio.new(nome_utensilio, tipo_utensilio)
+    puts "#{nome} surge com o #{@utensilio.nome}."
+  end
+
+  # SOBRESCRITA (override)
+  # reescreve o atacar() com o comportamento específico do Catador
+  def atacar
+    puts "#{nome} ataca usando o utensilio #{@utensilio.nome}!"
+    puts "  [Tipo: #{@utensilio.tipo}]"
+  end
+
+  # IMPLEMENTAÇÃO DO MÓDULO
+  # aqui a classe cumpre o contrato do CapacidadeEspirito
+  # sem isso, chamar invocar_espirito lançaria o NotImplementedError
+  # definido no módulo
+  def invocar_espirito
+    puts "#{nome} invoca o espirito do utensilio! Poder: #{forca * 5}"
+  end
+end
+
+
+# AGREGAÇÃO
+# GrupoDeZeladores guarda referências pra Catadores que já existiam
+# fora dele
+# se o grupo sumir, os catadores continuam existindo
+class GrupoDeZeladores
+  attr_accessor :catadores
+
+  def initialize(catadores = [])
+    @catadores = catadores
+  end
+
+  def iniciar_missao(missao)
+    puts "\n--- Grupo iniciando missao: #{missao} ---"
+
+    # POLIMORFISMO EM AÇÃO
+    # o mesmo .atacar() para todos, mas cada um executa o seu próprio
+    @catadores.each do |c|
+      c.atacar
+    end
+  end
+
+  def listar_combatentes
+    puts "\n--- Zeladores prontos para combate ---"
+
+    # INTROSPECÇÃO com .select
+    # .select percorre o array e retorna só os elementos que passam na
+    # condição do bloco
+    # o bloco é o trecho entre {} — é como um mini-método anônimo
+    # executado pra cada elemento
+    # |c| é a variável temporária que representa o elemento atual da
+    # iteração
+    # as barras || são a sintaxe do Ruby pra declarar esse parâmetro do
+    # bloco, igual um (c) em outras linguagens
+    # respond_to?(:entrar_em_combate) verifica se o objeto c possui
+    # aquele método disponível
+    combatentes = @catadores.select { |c| c.respond_to?(:entrar_em_combate) }
+    combatentes.each(&:entrar_em_combate)
+  end
+end
+
+
+# --- MAIN ---
+
+rudo   = Catador.new("Rudo",   "Aoiro",  1000, "Luvas",        "Ofensiva")
+enjin  = Catador.new("Enjin",  "Abismo", 1200, "Guarda-chuva", "Velocidade")
+barado = Habitante.new("Barado", "Superficie", 800)
+
+rudo.forca = 1100
+puts "\nRudo agora tem #{rudo.forca} de forca."
+
+puts "\n--- Habilidades ---"
+rudo.invocar_espirito
+rudo.entrar_em_combate
+# barado.invocar_espirito <- daria NoMethodError: Habitante não inclui
+# o módulo CapacidadeEspirito
+
+puts "\nComposicao:"
+puts rudo.utensilio.mostrar_detalhes
+
+# agregação: catadores já existiam antes do grupo ser criado
+grupo = GrupoDeZeladores.new([rudo, enjin])
+
+grupo.iniciar_missao("Recuperar utensilios perdidos no Abismo")
+grupo.listar_combatentes
+\end{lstlisting}
+
+\section{Exercícios Práticos do Módulo}
+
+\begin{exercicio}{Exercício 1: Encapsulamento e Herança (O Cardápio do Afterlife)}
+Em \textit{Cyberpunk 2077}, o Afterlife é o bar mais famoso de Night City, uma metrópole
+futurista, e é frequentado por mercenários. O cardápio tem coquetéis comuns e drinks que
+homenageiam \textbf{lendas}. Todo drink tem um nome, que nunca muda, e um preço, que o bar pode
+reajustar dentro da tabela da casa.
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Lenda}: mercenário famoso de Night City, vivo ou morto, homenageado com um
+    drink. No código, é só um texto.
+    \item \textbf{Eurodólar}: a moeda de Night City. No código, o preço é só um número.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{CoquetelAfterlife}: o \texttt{initialize} recebe \texttt{nome} e
+    \texttt{preco}. O \texttt{nome} pode ser lido de fora, mas não alterado (use
+    \texttt{attr\_reader}). O preço fica guardado em \texttt{@\_preco}, sem
+    \texttt{attr\_reader}, e o \texttt{initialize} atribui o valor recebido diretamente a ele. A
+    classe tem o getter manual \texttt{preco}; o setter manual \texttt{preco=(valor)}, que só
+    aceita valores de 5 a 200 (fora dessa faixa, exibe ``Preço inválido!'' e mantém o valor
+    anterior); e o método \texttt{ficha}, que \textbf{retorna} (não imprime) um texto com o nome
+    e o preço do drink.
+
+    \item \texttt{DrinkDeLenda}: herda de \texttt{CoquetelAfterlife} e possui o atributo
+    exclusivo \texttt{lenda} (com \texttt{attr\_reader}). O \texttt{initialize} recebe
+    \texttt{nome}, \texttt{preco} e \texttt{lenda} e repassa os dois primeiros ao pai com
+    \texttt{super(nome, preco)}. Sobrescreve \texttt{ficha}, reaproveitando o texto do pai com
+    \texttt{super} e acrescentando a lenda homenageada.
+\end{itemize}
+
+No programa principal, crie um array com um \texttt{CoquetelAfterlife} e dois
+\texttt{DrinkDeLenda}, à sua escolha, e percorra-o com \texttt{.each}, imprimindo a
+\texttt{ficha} de cada drink. Depois, tente definir, com o setter, o preço de um dos drinks de
+lenda como 500 e depois como 80, e imprima a ficha dele de novo. Por fim, tente alterar o nome de um dos drinks
+diretamente (\texttt{objeto.nome = ...}) e observe o erro. Depois, transforme essa linha em
+comentário (\texttt{\#}) para o programa voltar a rodar.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 2: Abstração, Polimorfismo e Arrays (A Orquestra da Gala)}
+Em \textit{Your Lie in April} (\textit{Shigatsu wa Kimi no Uso}), jovens músicos de música
+clássica se apresentam em competições e concertos de gala. Em uma apresentação, cada
+instrumentista tem um papel: o \textbf{solista} toca a melodia principal e o
+\textbf{acompanhador} toca a base, seguindo o ritmo do solista. Todos são conduzidos pelo
+\textbf{regente}.
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Solista}: músico que toca a melodia principal da peça, em destaque.
+    \item \textbf{Acompanhador}: músico que toca a base da peça, seguindo o ritmo do solista.
+    \item \textbf{Regente}: quem conduz a orquestra durante a apresentação (o maestro).
+    \item \textbf{Peça}: a obra musical apresentada. No código, é só um texto com o nome dela.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{Instrumentista} (abstração): o \texttt{initialize} recebe \texttt{nome} e
+    \texttt{instrumento} (os dois com \texttt{attr\_reader}). O método
+    \texttt{interpretar(peca)} tem como corpo apenas um \texttt{raise NotImplementedError}, com
+    uma mensagem à sua escolha.
+
+    \item \texttt{Solista}: herda de \texttt{Instrumentista}, \textbf{sem} \texttt{initialize}
+    próprio (ela usa o do pai), e sobrescreve \texttt{interpretar(peca)} para imprimir o nome, o
+    instrumento e a peça, dizendo que ele conduz a melodia principal.
+
+    \item \texttt{Acompanhador}: também herda de \texttt{Instrumentista}, \textbf{sem}
+    \texttt{initialize} próprio, e sobrescreve \texttt{interpretar(peca)} para imprimir o nome,
+    o instrumento e a peça, dizendo que ele acompanha o ritmo do solista.
+
+    \item \texttt{Regente}: o \texttt{initialize} recebe \texttt{nome} e cria o array
+    \texttt{@orquestra} vazio. Possui o método \texttt{convocar(instrumentista)}, que adiciona o
+    instrumentista ao \texttt{@orquestra} com \texttt{<{}<}; o método \texttt{reger(peca)}, que
+    imprime o nome do regente e a peça e, com \texttt{.each}, chama \texttt{interpretar(peca)}
+    de cada instrumentista; e o método \texttt{escalacao}, que usa \texttt{.map} para
+    \textbf{retornar} um novo array de textos, um por instrumentista, com o nome da classe dele
+    (use \texttt{.class}) e o seu nome.
+\end{itemize}
+
+No programa principal, crie um \texttt{Solista}, um \texttt{Acompanhador} e um
+\texttt{Regente}, à sua escolha. Convoque os dois instrumentistas, chame \texttt{reger(...)}
+com uma peça à sua escolha e imprima, com \texttt{.each}, cada texto do array retornado por
+\texttt{escalacao}. Por fim, crie um \texttt{Instrumentista} diretamente e, na linha seguinte,
+chame \texttt{interpretar(...)} nele. Observe que o objeto é criado, mas a chamada gera um erro.
+Depois, transforme a linha da chamada em comentário (\texttt{\#}) para o programa voltar a
+rodar.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 3: Composição e Agregação (D-Mail para o Passado)}
+Em \textit{Steins;Gate}, um grupo de amigos mantém o Laboratório de Gadgets do Futuro, um
+pequeno laboratório de invenções em Tóquio. A invenção mais importante do grupo é o
+\textbf{PhoneWave}, um micro-ondas ligado a um celular que, por acidente, envia mensagens de
+texto para o passado. O aparelho foi montado dentro do laboratório e só existe nele
+(composição). Os membros do laboratório já eram pessoas comuns antes de entrar no grupo e
+continuam existindo fora dele (agregação).
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{PhoneWave}: o ``Microondas-Telefone'', nome que o aparelho recebe no anime.
+    \item \textbf{D-Mail}: mensagem de texto enviada para o passado pelo PhoneWave. No código, é
+    só um texto.
+    \item \textbf{Lab Mem}: abreviação de \textit{Laboratory Member}. Cada membro do laboratório
+    recebe um número de membro. No código, esse número é um inteiro.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{PhoneWave}: método \texttt{enviar\_dmail(mensagem)}, que imprime a mensagem e
+    avisa que ela foi enviada para o passado.
+
+    \item \texttt{MembroDoLab}: o \texttt{initialize} recebe \texttt{numero} (o número de Lab
+    Mem) e \texttt{nome}, os dois com \texttt{attr\_reader}.
+
+    \item \texttt{LaboratorioDeGadgets}: o \texttt{initialize} não recebe parâmetros, cria um
+    \texttt{PhoneWave} \textbf{dentro} dele, guardado em \texttt{@phonewave}, e cria o array
+    \texttt{@membros} vazio. Possui o método \texttt{admitir(membro)}, que adiciona um membro já
+    criado ao \texttt{@membros} e imprime o número e o nome dele; e o método
+    \texttt{experimento(mensagem)}, que imprime, com \texttt{.each}, o número e o nome de cada
+    membro presente e depois envia a mensagem pelo \texttt{enviar\_dmail} do PhoneWave guardado
+    em \texttt{@phonewave}.
+\end{itemize}
+
+No programa principal, crie dois membros \textbf{antes} do laboratório, à sua escolha. Depois,
+crie o laboratório, admita os dois e chame \texttt{experimento(...)} com uma mensagem à sua
+escolha. Explique, em um comentário no código, o que é composição e o que é agregação no seu
+programa.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 4: Módulos e Introspecção (Depoimentos em Baker Street)}
+Sherlock Holmes é um detetive que mora na Baker Street, em Londres. Ao investigar um crime, ele
+ouve todos os envolvidos, e cada um presta \textbf{depoimento} do seu jeito: a
+\textbf{testemunha ocular} conta o que viu e o suspeito apresenta o seu \textbf{álibi}. No fim,
+Holmes entrega à \textbf{Scotland Yard} quem pode ser detido, e só os suspeitos podem.
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Depoimento}: relato de uma pessoa sobre o crime. \textbf{Depoente} é quem
+    presta o depoimento.
+    \item \textbf{Testemunha ocular}: pessoa que viu o crime acontecer.
+    \item \textbf{Álibi}: a justificativa do suspeito de que estava em outro lugar na hora do
+    crime.
+    \item \textbf{Scotland Yard}: a polícia de Londres.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{Depoente} (módulo-contrato): método \texttt{depor}, cujo corpo é apenas um
+    \texttt{raise NotImplementedError}.
+
+    \item \texttt{Detivel} (módulo com implementação pronta): método \texttt{ser\_detido}, que
+    imprime o \texttt{nome} da pessoa e que ela foi levada pela Scotland Yard. O \texttt{nome}
+    vem do \texttt{attr\_reader} da classe que incluir o módulo.
+
+    \item \texttt{Envolvido} (classe base): o \texttt{initialize} recebe \texttt{nome} (com
+    \texttt{attr\_reader}). Ela não inclui nenhum módulo.
+
+    \item \texttt{TestemunhaOcular}: herda de \texttt{Envolvido} e inclui \textbf{apenas}
+    \texttt{Depoente}. Implementa \texttt{depor} para imprimir o nome e o que a testemunha viu
+    (texto à sua escolha).
+
+    \item \texttt{SuspeitoDoCrime}: herda de \texttt{Envolvido} e inclui \texttt{Depoente}
+    \textbf{e} \texttt{Detivel}. Implementa \texttt{depor} para imprimir o nome e o álibi do
+    suspeito (texto à sua escolha).
+
+    \item \texttt{Investigacao} (agregação): o \texttt{initialize} recebe \texttt{caso} (o nome
+    do caso) e cria o array \texttt{@envolvidos} vazio. Possui o método
+    \texttt{registrar(envolvido)}, que adiciona um envolvido já criado ao array; o método
+    \texttt{ouvir\_todos}, que imprime o nome do caso e chama \texttt{depor} de cada envolvido
+    com \texttt{.each} (polimorfismo); e o método \texttt{acionar\_scotland\_yard}, que usa
+    \texttt{.select} com \texttt{respond\_to?(:ser\_detido)} para separar quem pode ser detido e
+    chama \texttt{ser\_detido} de cada um deles.
+\end{itemize}
+
+No programa principal, crie uma testemunha ocular e dois suspeitos, à sua escolha,
+\textbf{antes} da investigação. Depois, crie a investigação com um caso à sua escolha, registre
+os três e chame \texttt{ouvir\_todos} e \texttt{acionar\_scotland\_yard}.
+\end{exercicio}

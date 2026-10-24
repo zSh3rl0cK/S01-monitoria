@@ -1,0 +1,713 @@
+% =====================================================================
+% RELATÓRIO 8 — POO com Python
+% Capítulo para ser incorporado à Apostila S01 (OO + PF), após o Relatório 7.
+% =====================================================================
+
+% ---------------------------------------------------------------------
+% Definições usadas neste capítulo (podem ser movidas para o preâmbulo).
+% - python: habilita a linguagem Python no listings e corrige a
+%   acentuação dentro dos códigos (mesma solução do estilo csharp).
+% - azulRelatorio e exercicio: já são criados no Relatório 7. As linhas
+%   abaixo só os recriam se este capítulo for compilado sem ele.
+% ---------------------------------------------------------------------
+\lstdefinestyle{python}{
+    language=Python,
+    morekeywords={self,super},
+    literate=
+        {á}{{\'a}}1 {à}{{\`a}}1 {ã}{{\~a}}1 {â}{{\^a}}1
+        {é}{{\'e}}1 {ê}{{\^e}}1 {è}{{\`e}}1 {í}{{\'\i}}1
+        {ó}{{\'o}}1 {õ}{{\~o}}1 {ô}{{\^o}}1 {ú}{{\'u}}1
+        {ç}{{\c{c}}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Ç}{{\c{C}}}1
+        {Ã}{{\~A}}1 {Â}{{\^A}}1 {Ê}{{\^E}}1 {Õ}{{\~O}}1
+        {—}{{\textemdash}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+}
+
+\definecolor{azulRelatorio}{rgb}{0.1,0.3,0.8}
+
+\ifcsname exercicio\endcsname\else
+\newtcolorbox{exercicio}[1]{
+    colback=white,
+    colframe=azulRelatorio,
+    coltitle=white,
+    fonttitle=\normalfont,
+    boxrule=0.8pt,
+    arc=1.5mm,
+    title={#1}
+}
+\fi
+
+\chapter{Relatório 8: Programação Orientada a Objetos em Python}
+
+\section{Fundamentos Teóricos e Pilares da POO}
+
+Nos Relatórios 6 e 7, os pilares da POO foram apresentados em C++ e em C\#, linguagens que usam
+palavras-chave para controlar o acesso aos dados (\texttt{private}, \texttt{public}) e para
+permitir a sobrescrita de métodos (\texttt{virtual}, \texttt{override}). O \textbf{Python} mantém
+os mesmos conceitos, mas troca boa parte dessas palavras-chave por \textbf{convenções}: não existe
+\texttt{new}, o construtor sempre se chama \texttt{\_\_init\_\_}, o próprio objeto é recebido de
+forma explícita pelo parâmetro \texttt{self} e o nível de acesso de um atributo é indicado pelo
+seu nome. Assim como no C\#, a memória é liberada automaticamente pelo \textbf{Garbage
+Collector}.
+
+A tabela abaixo relaciona as estruturas já vistas em C\# com as equivalentes em Python:
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Conceito} & \textbf{C\# (Relatório 7)} & \textbf{Python (Relatório 8)} \\
+\hline
+Construtor & \texttt{public Item(string nome)} & \texttt{def \_\_init\_\_(self, nome)} \\
+Próprio objeto & \texttt{this} & \texttt{self} \\
+Instanciação & \texttt{new Item(nome)} & \texttt{Item(nome)} \\
+Atributo privado & \texttt{private} & prefixo \texttt{\_\_} (convenção) \\
+Herança & \texttt{class Arma : Item} & \texttt{class Arma(Item)} \\
+Construtor do pai & \texttt{: base(nome)} & \texttt{super().\_\_init\_\_(nome)} \\
+Método do pai & \texttt{base.Usar()} & \texttt{super().usar()} \\
+Sobrescrita & \texttt{virtual} + \texttt{override} & basta redefinir o método \\
+Coleção & \texttt{List<Item>} e \texttt{.Add()} & \texttt{list[Item]} e \texttt{.append()} \\
+Repetição & \texttt{foreach (var x in lista)} & \texttt{for x in lista:} \\
+\hline
+\end{tabular}
+\end{center}
+
+Os quatro pilares continuam valendo, agora ilustrados com um mini-RPG em que os heróis Arthur e
+Merlin se enfrentam:
+
+\begin{itemize}
+    \item \textbf{Abstração}: Cada objeto guarda apenas o que importa para a batalha. Um
+    \texttt{Personagem} precisa de nome, vida, nível, uma arma e um inventário.
+
+    \item \textbf{Encapsulamento}: O dano de uma \texttt{Arma} é privado e só pode ser lido e
+    alterado pelos métodos \texttt{get\_dano()} e \texttt{set\_dano()}, que impedem valores
+    inválidos.
+
+    \item \textbf{Herança}: \texttt{Guerreiro} e \texttt{Mago} reaproveitam a estrutura de
+    \texttt{Personagem} (relação ``\textbf{É UM}'': um Guerreiro é um Personagem).
+
+    \item \textbf{Polimorfismo}: Uma lista guarda guerreiros e magos; ao chamar
+    \texttt{atacar()}, cada objeto executa a sua própria versão do método.
+\end{itemize}
+
+\subsection{Interfaces: o Contrato entre Classes}
+
+A novidade deste relatório são as \textbf{interfaces}. Uma interface define \textbf{quais}
+métodos uma classe é obrigada a ter, sem dizer \textbf{como} eles funcionam. Ela funciona como
+um contrato: toda classe que ``assina'' a interface precisa implementar todos os seus métodos. No
+mini-RPG, a interface \texttt{IAcao} exige os métodos \texttt{atacar()} e \texttt{defender()};
+por isso, \texttt{Guerreiro} e \texttt{Mago} são obrigados a implementar os dois, cada um do seu
+jeito. As interfaces:
+
+\begin{itemize}
+    \item Garantem que classes diferentes, mas com comportamentos semelhantes, sigam o mesmo
+    contrato.
+    \item Facilitam a substituição de uma implementação por outra.
+    \item Tornam o código mais modular e escalável.
+    \item Permitem o uso do polimorfismo de forma limpa.
+\end{itemize}
+
+O Python não possui uma palavra-chave \texttt{interface}. Elas são representadas por
+\textbf{classes abstratas}, criadas com o módulo \texttt{abc}.
+
+\subsection{Relacionamentos entre Classes}
+
+A composição e a agregação, vistas no Relatório 7, continuam valendo (relação
+``\textbf{TEM UM}''):
+
+\begin{itemize}
+    \item \textbf{Composição (relação forte)}: A parte é criada \textbf{dentro} do objeto dono e
+    ``morre'' junto com ele. Exemplo: o inventário nasce dentro do próprio personagem.
+
+    \item \textbf{Agregação (relação fraca)}: A parte é criada \textbf{fora} e o dono apenas
+    guarda uma referência a ela. Exemplo: a Espada Longa e a Poção de Vida são criadas antes e
+    só depois são entregues ao personagem.
+\end{itemize}
+
+\section{Documentação Sintática das Estruturas de POO}
+
+Esta seção detalha todas as palavras-chave e construções sintáticas utilizadas na implementação
+de POO em Python. Os exercícios deste relatório devem ser resolvidos \textbf{apenas} com as
+estruturas documentadas aqui.
+
+\subsection{Estrutura do Programa e Saída no Console}
+
+O Python não usa chaves nem ponto e vírgula: os blocos são definidos pela \textbf{indentação}
+(4 espaços) após os dois-pontos. Comentários começam com \texttt{\#}. O bloco
+\texttt{if \_\_name\_\_ == ...} marca o início do programa principal (o equivalente à
+\texttt{Main}). A letra \texttt{f} antes das aspas cria uma \textbf{f-string}, que permite
+inserir valores entre chaves diretamente no texto.
+
+\begin{lstlisting}[style=python]
+# comentários começam com #
+if __name__ == "__main__":
+    heroi = "Arthur"
+    print(f"O herói se chama {heroi}.")  # f-string: interpolação
+    print("\n--- Fim ---")                # \n = quebra de linha
+\end{lstlisting}
+
+\subsection{Declaração de Classe, \texttt{\_\_init\_\_} e \texttt{self}}
+
+Uma classe é declarada com a palavra-chave \texttt{class}. O construtor é o método especial
+\texttt{\_\_init\_\_}, executado automaticamente quando o objeto é criado. Todo método recebe,
+como primeiro parâmetro, o \texttt{self}, que referencia o próprio objeto (o equivalente ao
+\texttt{this} do C\#):
+
+\begin{lstlisting}[style=python]
+class Item:
+
+    # roda automaticamente quando o objeto é criado
+    def __init__(self, nome: str):
+        self.nome = nome  # cria o atributo nome no próprio objeto
+
+# Instanciação: em Python não existe "new"
+pocao = Item("Poção de Vida")
+print(pocao.nome)
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{def}: Declara um método (ou uma função). O corpo fica indentado abaixo dele.
+
+    \item \texttt{self}: Na chamada, o Python preenche o \texttt{self} sozinho. Escrevemos
+    \texttt{espada.usar()}, e não \texttt{espada.usar(espada)}.
+
+    \item \texttt{nome: str}: \textbf{Anotação de tipo}. Documenta o tipo esperado do
+    parâmetro, mas o Python não impede que outro tipo seja passado.
+
+    \item \texttt{return}: Devolve um valor para quem chamou o método.
+\end{itemize}
+
+\subsection{Encapsulamento por Convenção: \texttt{\_} e \texttt{\_\_}}
+
+O Python não tem as palavras \texttt{public}, \texttt{protected} e \texttt{private}. O nível de
+acesso é indicado pelo \textbf{prefixo do nome} do atributo:
+
+\begin{lstlisting}[style=python]
+class Personagem:
+
+    def __init__(self, nome: str, vida: int, arma: Arma):
+        self.nome = nome    # público: sem prefixo
+        self._vida = vida   # protegido: um underline
+        self.__nivel = 1    # privado: dois underlines
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{Sem prefixo} (\texttt{nome}): Atributo público, acessível de qualquer ponto
+    do programa.
+
+    \item \textbf{Um underline} (\texttt{\_vida}): Atributo protegido. O Python \textbf{não}
+    bloqueia o acesso; o underline é apenas um aviso de que o atributo é de uso interno da
+    classe e das suas filhas.
+
+    \item \textbf{Dois underlines} (\texttt{\_\_nivel}): Atributo privado. O Python
+    ``embaralha'' o nome do atributo, e ele deixa de ser encontrado fora da classe.
+\end{itemize}
+
+\begin{lstlisting}[style=python]
+arthur = Guerreiro("Arthur", 100, espada)
+print(arthur.nome)         # funciona: atributo público
+print(arthur._vida)        # funciona, mas não é recomendado
+print(arthur.__nivel)      # AttributeError: atributo não encontrado
+print(arthur.get_nivel())  # forma correta: usando o getter
+\end{lstlisting}
+
+O embaralhamento também vale para as classes filhas: dentro de uma filha, \texttt{self.\_\_nivel}
+não é encontrado. Para usar um atributo privado do pai, a filha deve chamar os métodos do
+próprio pai (como o getter).
+
+\subsection{Getters e Setters}
+
+Como um atributo privado não pode ser acessado de fora, a classe oferece métodos para lê-lo
+(\textbf{getter}) e para alterá-lo (\textbf{setter}). O setter valida o novo valor antes de
+aceitá-lo; se o valor for inválido, o anterior é mantido:
+
+\begin{lstlisting}[style=python]
+def get_dano(self):
+    return self.__dano
+
+def set_dano(self, novo_dano):
+    if novo_dano > 0:
+        self.__dano = novo_dano
+    else:
+        print("O dano deve ser positivo!")
+\end{lstlisting}
+
+\subsection{Herança e \texttt{super().\_\_init\_\_()}}
+
+A classe pai é indicada entre parênteses, após o nome da classe filha. Se a filha
+\textbf{não} define um \texttt{\_\_init\_\_}, ela herda automaticamente o do pai:
+
+\begin{lstlisting}[style=python]
+class Guerreiro(Personagem):  # Guerreiro É UM Personagem
+    ...
+
+# usa o __init__ herdado de Personagem
+arthur = Guerreiro("Arthur", 100, espada)
+\end{lstlisting}
+
+Quando a filha precisa de um atributo exclusivo, ela define o seu próprio \texttt{\_\_init\_\_}
+e repassa ao pai os parâmetros herdados com \texttt{super().\_\_init\_\_(...)} (o equivalente ao
+\texttt{: base(...)} do C\#). O exemplo abaixo é complementar e não faz parte do código de
+referência:
+
+\begin{lstlisting}[style=python]
+class Arqueiro(Personagem):
+
+    def __init__(self, nome: str, vida: int, arma: Arma, flechas: int):
+        # nome, vida e arma vão para o __init__ de Personagem
+        super().__init__(nome, vida, arma)
+        self.flechas = flechas  # atributo exclusivo do Arqueiro
+\end{lstlisting}
+
+\subsection{Sobrescrita e \texttt{super().metodo()}}
+
+Em Python não existem \texttt{virtual} nem \texttt{override}: qualquer método pode ser
+sobrescrito. Basta a classe filha definir um método com o \textbf{mesmo nome} do método do pai.
+Dentro dele, \texttt{super().metodo()} executa a versão do pai (o equivalente ao
+\texttt{base.Metodo()} do C\#), permitindo reaproveitar a sua lógica e apenas acrescentar o
+comportamento da filha:
+
+\begin{lstlisting}[style=python]
+# Na Classe Base (Personagem):
+def mostrar_status(self):
+    return f"Status: {self.nome} | Vida: {self._vida}"
+
+# Na Classe Derivada (Arqueiro): reaproveita o texto do pai
+def mostrar_status(self):
+    return super().mostrar_status() + f" | Flechas: {self.flechas}"
+\end{lstlisting}
+
+\subsection{Interfaces com \texttt{ABC} e \texttt{@abstractmethod}}
+
+Uma interface é criada como uma classe que herda de \texttt{ABC}. Os métodos obrigatórios
+recebem o decorador \texttt{@abstractmethod} e não possuem implementação:
+
+\begin{lstlisting}[style=python]
+from abc import ABC, abstractmethod
+
+class IAcao(ABC):  # herdar de ABC torna a classe abstrata
+
+    @abstractmethod
+    def atacar(self, alvo):
+        pass  # sem implementação: só define o contrato
+
+    @abstractmethod
+    def defender(self):
+        pass
+
+# Mago É UM Personagem e "assina" o contrato de IAcao
+class Mago(Personagem, IAcao):
+
+    def atacar(self, alvo):
+        print(f"<{self.nome}> lança uma BOLA DE FOGO em {alvo.nome}!")
+
+    def defender(self):
+        print(f"<{self.nome}> usa uma barreira arcana para defesa.")
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{from abc import ABC, abstractmethod}: Importa os recursos do módulo
+    \texttt{abc} (\textit{Abstract Base Classes}).
+
+    \item \texttt{@abstractmethod}: Decorador que marca o método como obrigatório para as
+    classes filhas. O prefixo \texttt{I} no nome da classe é uma convenção para indicar uma
+    interface.
+
+    \item \texttt{pass}: Bloco vazio. É usado quando a sintaxe exige um corpo, mas não há nada
+    a executar.
+
+    \item \texttt{class Mago(Personagem, IAcao)}: Uma classe pode herdar de mais de uma classe
+    ao mesmo tempo, separando-as por vírgula.
+\end{itemize}
+
+Uma classe abstrata \textbf{não pode ser instanciada}. O mesmo erro acontece ao instanciar uma
+filha que esqueceu de implementar algum método abstrato:
+
+\begin{lstlisting}[style=python]
+acao = IAcao()
+# TypeError: Can't instantiate abstract class IAcao without an
+# implementation for abstract methods 'atacar', 'defender'
+\end{lstlisting}
+
+\subsection{Composição e Agregação}
+
+A diferença entre os dois relacionamentos está em \textbf{onde a parte é criada}:
+
+\begin{lstlisting}[style=python]
+# COMPOSIÇÃO: o Inventario é criado DENTRO do __init__ do Personagem
+self.inventario = Inventario()
+
+# AGREGAÇÃO: o Item é criado FORA e apenas recebido como parâmetro
+def adicionar_item(self, item: Item):
+    self._itens.append(item)
+\end{lstlisting}
+
+\subsection{Listas, \texttt{for} e \texttt{isinstance}}
+
+A \texttt{list} é a coleção de tamanho dinâmico do Python. Uma lista anotada com o tipo da
+classe pai aceita objetos de qualquer classe filha, o que possibilita o polimorfismo ao
+percorrê-la com \texttt{for}:
+
+\begin{lstlisting}[style=python]
+itens = []                  # criação da lista vazia
+itens.append(pocao)         # adiciona um objeto no final
+print(f"Total: {len(itens)}")  # quantidade de elementos
+
+# lista já preenchida, anotada com o tipo dos objetos
+time_da_luta: list[IAcao] = [arthur, merlin]
+
+for combatente in time_da_luta:  # percorre elemento por elemento
+    if isinstance(combatente, Guerreiro):
+        combatente.atacar(merlin)
+    elif isinstance(combatente, Mago):
+        combatente.atacar(arthur)
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{.append(objeto)}: Insere um objeto no final da lista.
+    \item \texttt{len(lista)}: Retorna a quantidade de elementos da lista.
+    \item \texttt{list[Classe]}: Anotação que indica o tipo dos objetos guardados na lista.
+    \item \texttt{for x in lista:}: Percorre a lista elemento por elemento.
+    \item \texttt{isinstance(objeto, Classe)}: Retorna \texttt{True} se o objeto for da classe
+    informada (ou de uma filha dela). É útil para chamar um método que só existe em uma das
+    classes filhas.
+    \item \texttt{if}, \texttt{elif} e \texttt{else}: Estruturas de decisão. Condições podem ser
+    combinadas com \texttt{and}, \texttt{or} e \texttt{not}, e comparações podem ser
+    encadeadas, como em \texttt{0 <= x <= 10}.
+\end{itemize}
+
+\section{Código de Referência Completo}
+
+Abaixo está a implementação de referência utilizada para exemplificação do paradigma POO em
+Python:
+
+\begin{lstlisting}[style=python, caption={Exemplo de Aplicação de POO em Python}]
+from abc import ABC, abstractmethod
+
+
+# INTERFACE (contrato via classe abstrata)
+# Python não tem interface nativa como C# ou Java
+# ABC é a forma do Python simular isso
+# toda classe que herdar de IAcao É OBRIGADA a ter atacar() e defender()
+class IAcao(ABC):
+
+    @abstractmethod
+    def atacar(self, alvo):
+        pass
+
+    @abstractmethod
+    def defender(self):
+        pass
+
+
+# CLASSE SIMPLES
+# Arma não herda de nada, é só um molde com nome e dano
+# é criada fora e entregue ao Personagem (isso é Agregação)
+class Arma:
+
+    def __init__(self, nome: str, dano: int):
+        # ENCAPSULAMENTO - níveis de acesso em Python
+        # Python não bloqueia o acesso de verdade, é uma convenção
+        # _nome  = um underline = "protegido", evitar mexer fora da classe
+        # __dano = dois underlines = "privado", o Python embaralha o nome
+        self._nome = nome
+        self.__dano = dano
+
+    # self indica que o método recebe o próprio objeto desta classe
+    def usar(self):
+        return f"{self._nome} (Dano: {self.__dano})"
+
+    # GETTER e SETTER
+    # como __dano é privado, criamos métodos pra ler e alterar ele
+    # isso é encapsulamento na prática: o objeto controla os seus dados
+    def get_dano(self):
+        return self.__dano
+
+    def set_dano(self, novo_dano):
+        if novo_dano > 0:
+            self.__dano = novo_dano
+        else:
+            print("O dano deve ser positivo!")
+
+
+# AGREGAÇÃO
+# Item existe por conta própria, independente de qualquer Inventario
+# se o Inventario sumir, o Item continua existindo
+class Item:
+
+    # __init__ é o construtor que usamos nas outras linguagens
+    def __init__(self, nome: str):
+        self.nome = nome
+
+
+# AGREGAÇÃO (cont.)
+# Inventario guarda referências pros Itens, mas não é dono deles
+class Inventario:
+
+    def __init__(self):
+        self._itens = []
+
+    def adicionar_item(self, item: Item):
+        self._itens.append(item)
+        print(f"-> {item.nome} adicionado ao inventário.")
+
+    def listar_itens(self):
+        if not self._itens:
+            return "Inventário vazio."
+        # junta o nome de todos os itens em um texto, separados por vírgula
+        return ", ".join([item.nome for item in self._itens])
+
+
+# CLASSE BASE
+# molde principal de todo personagem do jogo
+# demonstra Encapsulamento e vai ser herdada por Guerreiro e Mago
+class Personagem:
+
+    def __init__(self, nome: str, vida: int, arma: Arma):
+        self.nome = nome        # público - qualquer um pode acessar
+        self._vida = vida       # protegido - evitar mexer fora da classe
+        self.__nivel = 1        # privado - só a classe acessa diretamente
+        # agregação: a Arma é criada fora e apenas recebida
+        self.arma = arma
+        # composição: o Inventario nasce e morre junto com o Personagem
+        self.inventario = Inventario()
+
+    def mostrar_status(self):
+        return (f"Status: {self.nome} | Vida: {self._vida} | "
+                f"Nível: {self.__nivel} | Arma: {self.arma._nome} | "
+                f"Itens: {self.inventario.listar_itens()}")
+
+    def receber_dano(self, dano):
+        self._vida -= dano
+        if self._vida < 0:
+            self._vida = 0
+        print(f"<{self.nome}> recebeu {dano} de dano. "
+              f"Vida restante: {self._vida}")
+
+    def subir_nivel(self):
+        self.__nivel += 1
+        print(f"{self.nome} subiu para o nível {self.__nivel}!")
+
+    def get_nivel(self):
+        return self.__nivel
+
+    def set_vida(self, nova_vida):
+        if nova_vida >= 0:
+            self._vida = nova_vida
+        else:
+            print("A vida não pode ser negativa!")
+
+
+# HERANÇA + INTERFACE
+# Guerreiro herda de Personagem E implementa IAcao
+# por isso é obrigado a ter atacar() e defender()
+class Guerreiro(Personagem, IAcao):
+
+    # SOBRESCRITA
+    # implementa atacar() com o comportamento específico do Guerreiro
+    def atacar(self, alvo):
+        dano_total = self.arma.get_dano() * 1.5
+        print(f"<{self.nome}> ATACA com força de GUERREIRO usando "
+              f"{self.arma.usar()} em {alvo.nome}!")
+        alvo.receber_dano(dano_total)
+
+    def defender(self):
+        print(f"<{self.nome}> se defende com o escudo, "
+              f"reduzindo o próximo dano.")
+
+
+# POLIMORFISMO
+# Mago também implementa IAcao, mas o atacar() é completamente diferente
+# mesma chamada, comportamento diferente: isso é polimorfismo
+class Mago(Personagem, IAcao):
+
+    def atacar(self, alvo):
+        dano_total = self.arma.get_dano() * 0.8 + 10
+        print(f"<{self.nome}> lança uma BOLA DE FOGO (Mago) "
+              f"em {alvo.nome}!")
+        alvo.receber_dano(dano_total)
+
+    def defender(self):
+        print(f"<{self.nome}> usa uma barreira arcana para defesa.")
+
+
+if __name__ == "__main__":
+    print("--- Inicializando o Mini-RPG ---")
+
+    # agregação: as armas são criadas fora e entregues aos personagens
+    espada = Arma("Espada Longa", 15)
+    cajado = Arma("Cajado Élfico", 12)
+
+    # testando getter e setter antes de criar os personagens
+    cajado.set_dano(espada.get_dano())
+
+    arthur = Guerreiro("Arthur", 100, espada)
+    merlin = Mago("Merlin", 80, cajado)
+
+    # agregação: itens existem fora e são só referenciados pelo inventário
+    pocao = Item("Poção de Vida")
+    mapa = Item("Mapa Antigo")
+
+    arthur.inventario.adicionar_item(pocao)
+    merlin.inventario.adicionar_item(mapa)
+
+    print("\n--- Status Inicial ---")
+    print(arthur.mostrar_status())
+    print(merlin.mostrar_status())
+
+    # POLIMORFISMO EM AÇÃO
+    # a lista do tipo IAcao guarda Guerreiro e Mago
+    # o mesmo .atacar() chama métodos diferentes dependendo do objeto
+    time_da_luta: list[IAcao] = [arthur, merlin]
+
+    print("\n--- Simulação da Luta ---")
+    for combatente in time_da_luta:
+        if isinstance(combatente, Guerreiro):
+            combatente.atacar(merlin)
+        elif isinstance(combatente, Mago):
+            combatente.atacar(arthur)
+
+    # ENCAPSULAMENTO NA PRÁTICA
+    # forma correta: usando getter e setter
+    print(f"\nNível atual (via getter): {arthur.get_nivel()}")
+    arthur.arma.set_dano(25)
+    print(f"Dano atualizado via setter: {arthur.arma.get_dano()}")
+    arthur.subir_nivel()
+
+    print("\n--- Status Final ---")
+    print(arthur.mostrar_status())
+    print(merlin.mostrar_status())
+\end{lstlisting}
+
+\section{Exercícios Práticos do Módulo}
+
+\begin{exercicio}{Exercício 1: Encapsulamento e Herança (A Fogueira de Firelink)}
+Em Dark Souls, todo morto-vivo carrega almas e Frascos de Estus, que se recarregam nas
+fogueiras e nunca passam de 10. Os clérigos, além disso, conhecem um milagre próprio.
+Implemente:
+
+\begin{itemize}
+    \item \texttt{MortoVivo}: atributos \texttt{nome} (público), \texttt{\_almas} (protegido) e
+    \texttt{\_\_estus} (privado), inicializados no \texttt{\_\_init\_\_}; métodos
+    \texttt{get\_estus()} e \texttt{set\_estus(quantidade)}, que só aceita valores de 0 a 10
+    (fora dessa faixa, exibe ``Quantidade de Estus inválida!'' e mantém o valor anterior); e
+    método \texttt{mostrar\_status()}, que \textbf{retorna} (não imprime) um texto com o nome,
+    as almas e o Estus.
+
+    \item \texttt{Clerigo}: herda de \texttt{MortoVivo} e possui o atributo exclusivo
+    \texttt{milagre}, inicializando a parte herdada com \texttt{super().\_\_init\_\_(...)}.
+    Sobrescreve \texttt{mostrar\_status()}, reaproveitando o texto do pai com
+    \texttt{super().mostrar\_status()} e acrescentando o milagre.
+\end{itemize}
+
+No programa principal, crie um \texttt{Clerigo} à sua escolha e exiba o seu status. Em
+seguida, tente definir o Estus como 15 e depois como 10, exibindo o status novamente. Por fim,
+tente imprimir o atributo \texttt{\_\_estus} do clérigo diretamente e observe o erro. Depois,
+transforme essa linha em comentário (\texttt{\#}) para o programa voltar a rodar.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 2: Herança e Polimorfismo (Suprema em Overwatch)}
+Em Overwatch, todo herói pode usar a sua suprema, mas o efeito depende da sua função. Os
+suportes, além disso, conseguem curar a equipe. Implemente:
+
+\begin{itemize}
+    \item \texttt{HeroiOverwatch}: atributos \texttt{codinome} e \texttt{funcao}, recebidos no
+    \texttt{\_\_init\_\_}, e método \texttt{usar\_suprema()}, que exibe uma suprema genérica.
+
+    \item \texttt{HeroiTanque}: herda de \texttt{HeroiOverwatch}, \textbf{sem}
+    \texttt{\_\_init\_\_} próprio, e sobrescreve \texttt{usar\_suprema()}.
+
+    \item \texttt{HeroiSuporte}: herda de \texttt{HeroiOverwatch}, \textbf{sem}
+    \texttt{\_\_init\_\_} próprio, sobrescreve \texttt{usar\_suprema()} e possui o método
+    exclusivo \texttt{curar\_equipe()}.
+\end{itemize}
+
+No programa principal, crie uma lista anotada como \texttt{list[HeroiOverwatch]} com um herói
+de cada uma das três classes, incluindo um herói da classe base. Percorra a lista com
+\texttt{for} chamando \texttt{usar\_suprema()} de cada herói e, usando \texttt{isinstance},
+chame \texttt{curar\_equipe()} apenas nos suportes.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 3: Composição e Agregação (Infiltração no Palácio)}
+Em Persona 5, um grupo de estudantes chamado Phantom Thieves invade \textbf{Palácios}: mundos
+criados a partir do coração de pessoas corruptas, cada um conhecido pelo nome do seu dono. O
+líder do grupo, de codinome Joker, luta com a sua \textbf{Persona}, uma criatura que nasce de
+dentro dele e só existe enquanto ele existir (composição). Ao longo da história, ele recruta
+\textbf{aliados}: colegas que já existiam antes de entrar no grupo e continuam existindo fora
+dele (agregação).
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Arcano}: categoria da Persona, inspirada nas cartas de tarô. No código, é só
+    um texto.
+    \item \textbf{Codinome}: apelido que cada membro usa durante as invasões, diferente do seu
+    nome real.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{Persona}: atributos \texttt{nome} e \texttt{arcano} e método
+    \texttt{invocar()}, que exibe os dois dados.
+
+    \item \texttt{Aliado}: atributos \texttt{nome} (nome real) e \texttt{codinome}.
+
+    \item \texttt{Lider}: representa o Joker. Possui o atributo \texttt{codinome}; uma
+    \texttt{Persona} criada \textbf{dentro} do \texttt{\_\_init\_\_}, com nome e arcano à sua
+    escolha; uma lista \texttt{\_equipe} que começa vazia; o método
+    \texttt{recrutar(aliado: Aliado)}, que adiciona o aliado à \texttt{\_equipe}; e o método
+    \texttt{infiltrar(palacio)}, que recebe o nome do dono do Palácio, exibe o Palácio
+    invadido, invoca a Persona e lista a equipe.
+\end{itemize}
+
+No programa principal, crie dois aliados \textbf{antes} do líder. Depois, crie o líder,
+recrute os dois e chame \texttt{infiltrar(...)}. Explique, em um comentário no código, o que é
+composição e o que é agregação no seu programa.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 4: Revisão Geral (Ataque em Night City)}
+Em Cyberpunk, Night City é uma metrópole futurista controlada por grandes corporações. Para
+atacá-las, hackers se organizam em \textbf{células}, grupos que coordenam diferentes
+\textbf{unidades de rede} em um mesmo ataque. Toda unidade segue o mesmo protocolo: precisa
+saber executar uma invasão. Mas cada tipo de unidade faz isso do seu jeito. O
+\textbf{netrunner} usa o seu \textbf{cyberdeck} para quebrar o \textbf{gelo (ICE)} de um
+servidor. Já o \textbf{drone de vigilância} intercepta o sinal da rede.
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Netrunner}: hacker que se conecta diretamente à rede para invadir sistemas.
+    \item \textbf{Cyberdeck}: equipamento que o netrunner usa para hackear. Ele é implantado
+    no corpo do netrunner, por isso não existe sem ele (composição).
+    \item \textbf{Gelo (ICE)}: barreira de segurança de um servidor, parecida com um firewall.
+    \item \textbf{Célula hacker}: grupo que reúne unidades que já existiam antes de entrar nele
+    (agregação).
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{IUnidadeDeRede} (interface): classe abstrata que herda de \texttt{ABC}, com
+    o método abstrato \texttt{executar\_invasao()}.
+
+    \item \texttt{Cyberdeck} (parte composta): atributo \texttt{modelo}.
+
+    \item \texttt{OperadorNetrunner} (implementação com composição): implementa
+    \texttt{IUnidadeDeRede}. O \texttt{\_\_init\_\_} recebe \texttt{nome} e o modelo do
+    cyberdeck, e cria o \texttt{Cyberdeck} \textbf{dentro} dele. O método
+    \texttt{executar\_invasao()} exibe o nome do netrunner, o modelo do cyberdeck e que ele
+    está quebrando o gelo (ICE) de um servidor.
+
+    \item \texttt{DroneDeVigilancia} (outra implementação): também implementa
+    \texttt{IUnidadeDeRede}. O \texttt{\_\_init\_\_} recebe \texttt{codigo}, a identificação
+    do drone, e o método \texttt{executar\_invasao()} exibe o código do drone e que ele está
+    interceptando o sinal da rede.
+
+    \item \texttt{CelulaHacker} (agregação): o \texttt{\_\_init\_\_} recebe \texttt{nome} e
+    uma lista de membros já criados, anotada como \texttt{list[IUnidadeDeRede]}. O método
+    \texttt{iniciar\_ataque()} exibe o nome da célula e chama \texttt{executar\_invasao()} de
+    cada membro (polimorfismo).
+\end{itemize}
+
+No programa principal, crie um netrunner e um drone, junte os dois em uma célula e chame
+\texttt{iniciar\_ataque()}. Por fim, tente criar um objeto \texttt{IUnidadeDeRede}
+diretamente e observe o erro. Depois, transforme essa linha em comentário (\texttt{\#}) para o
+programa voltar a rodar.
+\end{exercicio}

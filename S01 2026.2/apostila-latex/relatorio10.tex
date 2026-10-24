@@ -1,0 +1,951 @@
+% =====================================================================
+% RELATÓRIO 10 — POO com JavaScript
+% Capítulo para ser incorporado à Apostila S01 (OO + PF), após o Relatório 9.
+% =====================================================================
+
+% ---------------------------------------------------------------------
+% Definições usadas neste capítulo (podem ser movidas para o preâmbulo).
+% - JavaScript: o listings não tem essa linguagem, então ela é definida
+%   aqui (palavras-chave, comentários e strings). As strings entre aspas
+%   duplas ficaram de fora de propósito: os códigos deste capítulo só
+%   usam aspas simples e crases, e depois do begin{document} o babel em
+%   português transforma as aspas duplas em caractere ativo, o que pode
+%   quebrar a definição.
+% - javascript: estilo que usa a linguagem acima e corrige a acentuação
+%   dentro dos códigos (mesma solução dos estilos csharp, python e ruby).
+% - azulRelatorio e exercicio: já são criados no Relatório 7. As linhas
+%   abaixo só os recriam se este capítulo for compilado sem ele.
+% ---------------------------------------------------------------------
+\lstdefinelanguage{JavaScript}{
+    keywords={class, constructor, extends, super, this, new, return, function, const, let,
+        var, if, else, for, of, in, while, static, get, set, true, false, null, undefined,
+        typeof, instanceof, throw, try, catch},
+    sensitive=true,
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]',
+    morestring=[b]`
+}
+
+\lstdefinestyle{javascript}{
+    language=JavaScript,
+    literate=
+        {á}{{\'a}}1 {à}{{\`a}}1 {ã}{{\~a}}1 {â}{{\^a}}1
+        {é}{{\'e}}1 {ê}{{\^e}}1 {è}{{\`e}}1 {í}{{\'\i}}1
+        {ó}{{\'o}}1 {õ}{{\~o}}1 {ô}{{\^o}}1 {ú}{{\'u}}1
+        {ç}{{\c{c}}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Ç}{{\c{C}}}1
+        {Ã}{{\~A}}1 {Â}{{\^A}}1 {Ê}{{\^E}}1 {Õ}{{\~O}}1
+        {—}{{\textemdash}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+}
+
+\definecolor{azulRelatorio}{rgb}{0.1,0.3,0.8}
+
+\ifcsname exercicio\endcsname\else
+\newtcolorbox{exercicio}[1]{
+    colback=white,
+    colframe=azulRelatorio,
+    coltitle=white,
+    fonttitle=\normalfont,
+    boxrule=0.8pt,
+    arc=1.5mm,
+    title={#1}
+}
+\fi
+
+\chapter{Relatório 10: Programação Orientada a Objetos em JavaScript}
+
+\section{Fundamentos Teóricos e Pilares da POO}
+
+No Relatório 9, o Ruby mostrou uma linguagem em que tudo é objeto e em que os blocos terminam
+com \texttt{end}. O \textbf{JavaScript} nasceu em outro contexto: foi criado para rodar dentro do
+navegador e reagir ao que o usuário faz, e hoje também roda fora dele, em servidores, com o
+\textbf{Node.js}. Assim como o Python e o Ruby, ele tem \textbf{tipagem dinâmica}: as variáveis
+não declaram tipo. Já a sintaxe lembra o C\# e o C++: os blocos usam chaves e as instruções
+terminam com ponto e vírgula. A palavra \texttt{class} foi acrescentada à linguagem em 2015 e
+deixa o código parecido com o das linguagens anteriores. Os objetos são criados com
+\texttt{new}, os atributos são acessados sempre com \texttt{this} e os atributos privados
+começam com \texttt{\#}. Assim como nas linguagens anteriores, a memória é liberada
+automaticamente pelo \textbf{Garbage Collector}.
+
+A tabela abaixo relaciona as estruturas já vistas em Ruby com as equivalentes em JavaScript:
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Conceito} & \textbf{Ruby (Relatório 9)} & \textbf{JavaScript (Relatório 10)} \\
+\hline
+Construtor & \texttt{def initialize(nome)} & \texttt{constructor(nome)} \\
+Atributo do objeto & \texttt{@nome} & \texttt{this.nome} \\
+Instanciação & \texttt{Item.new(nome)} & \texttt{new Item(nome)} \\
+Atributo privado & toda variável \texttt{@} & prefixo \texttt{\#} (declarado) \\
+Getter & \texttt{attr\_reader :nome} & \texttt{get nome() \{ ... \}} \\
+Herança & \texttt{class Arma < Item} & \texttt{class Arma extends Item} \\
+Construtor do pai & \texttt{super(nome)} & \texttt{super(nome)} \\
+Método do pai & \texttt{super} & \texttt{super.metodo()} \\
+Interface & \texttt{module} + \texttt{include} & \texttt{throw new Error()} na base \\
+Verificação de classe & \texttt{x.is\_a?(Item)} & \texttt{x instanceof Item} \\
+Inserção na coleção & \texttt{lista <{}< item} & \texttt{lista.push(item)} \\
+Repetição & \texttt{lista.each do |x| ... end} & \texttt{lista.forEach(x => \{ ... \})} \\
+Filtro & \texttt{lista.select \{ |x| ... \}} & \texttt{lista.filter(x => ...)} \\
+Fim de bloco & \texttt{end} & \texttt{\}} \\
+\hline
+\end{tabular}
+\end{center}
+
+Os quatro pilares continuam valendo, agora ilustrados com uma banda de rock que se prepara para
+um show:
+
+\begin{itemize}
+    \item \textbf{Abstração}: Cada objeto guarda apenas o que importa para o show. Um
+    \texttt{Musico} precisa de nome, função e experiência.
+
+    \item \textbf{Encapsulamento}: A experiência do músico fica no atributo privado
+    \texttt{\#experiencia}, que só pode ser lido pelo getter \texttt{experiencia}. Na
+    \texttt{Banda}, os membros e o repertório também são privados.
+
+    \item \textbf{Herança}: \texttt{Vocalista} reaproveita a estrutura de \texttt{Musico}, e
+    \texttt{Guitarra} e \texttt{Bateria} reaproveitam a de \texttt{Instrumento} (relação
+    ``\textbf{É UM}'': um Vocalista é um Músico).
+
+    \item \textbf{Polimorfismo}: No show, a banda chama \texttt{executarAcao()} de cada membro e
+    \texttt{tocar()} de cada instrumento, e cada objeto executa a sua própria versão do método.
+\end{itemize}
+
+\subsection{Interfaces Simuladas e \textit{Duck Typing}}
+
+O JavaScript não tem a palavra-chave \texttt{interface} nem classes abstratas nativas. O
+contrato é simulado com uma classe base cujo método apenas \textbf{lança um erro} com
+\texttt{throw new Error(...)}. As classes filhas sobrescrevem esse método; se alguma não
+sobrescrever, o erro aparece quando o método for chamado. No código de referência, a classe
+\texttt{Instrumento} exige que \texttt{Guitarra} e \texttt{Bateria} implementem
+\texttt{tocar()}.
+
+Assim como no Ruby, e diferente do \texttt{ABC} do Python, nada é conferido antecipadamente: a
+classe base pode ser instanciada normalmente, e o erro só aparece em tempo de execução. Também
+como no Ruby, o que importa é se o objeto \textbf{sabe responder} ao método chamado (o
+\textit{duck typing}). No código de referência, um objeto criado na hora, que não pertence a
+nenhuma classe, funciona como instrumento só porque tem o método \texttt{tocar()}.
+
+\subsection{Relacionamentos entre Classes}
+
+A composição e a agregação, vistas nos relatórios anteriores, continuam valendo (relação
+``\textbf{TEM UM}''):
+
+\begin{itemize}
+    \item \textbf{Composição (relação forte)}: A parte é criada \textbf{dentro} do objeto dono e
+    ``morre'' junto com ele. Exemplo: o repertório da banda é criado dentro do
+    \texttt{constructor} da própria \texttt{Banda}.
+
+    \item \textbf{Agregação (relação fraca)}: A parte é criada \textbf{fora} e o dono apenas
+    guarda uma referência a ela. Exemplo: os músicos são criados antes e só depois entregues à
+    \texttt{Banda}. O mesmo vale para os instrumentos, criados no programa principal e depois
+    entregues aos músicos.
+\end{itemize}
+
+\section{Documentação Sintática das Estruturas de POO}
+
+Esta seção detalha todas as palavras-chave e construções sintáticas utilizadas na implementação
+de POO em JavaScript. Os exercícios deste relatório devem ser resolvidos \textbf{apenas} com as
+estruturas documentadas aqui.
+
+\subsection{Estrutura do Programa e Saída no Console}
+
+O JavaScript não tem uma função \texttt{main}: o arquivo é executado de cima para baixo, e o
+código solto depois das classes funciona como programa principal. Comentários de linha começam
+com \texttt{//}. Os blocos ficam entre chaves e as instruções terminam com ponto e vírgula. O
+\texttt{console.log} imprime um valor e pula uma linha. Textos podem usar aspas simples, aspas
+duplas ou crases (\textasciigrave); só com crases o texto vira um \textbf{template literal}, em
+que \texttt{\$\{...\}} insere um valor (o equivalente ao \texttt{\#\{...\}} do Ruby).
+
+\begin{lstlisting}[style=javascript]
+// comentários de linha começam com //
+const banda = 'Linkin Park';   // const: não pode ser reatribuída
+let faixas = 2;                // let: pode mudar depois
+faixas += 1;
+console.log(`A ${banda} tocou ${faixas} músicas.`);  // template literal
+console.log('\n--- Fim ---');  // \n = quebra de linha
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{const} e \texttt{let}: Declaram variáveis. Uma variável \texttt{const} não pode
+    receber outro valor depois de criada; uma \texttt{let} pode. As variáveis não têm tipo
+    declarado.
+
+    \item \texttt{if (condição) \{ ... \} else \{ ... \}}: Estrutura de decisão. A condição fica
+    entre parênteses.
+
+    \item \textbf{Comparações}: \texttt{===} (igual), \texttt{!==} (diferente), \texttt{>},
+    \texttt{<}, \texttt{>=} e \texttt{<=}. O \texttt{===} compara o valor e o tipo. Condições
+    podem ser combinadas com \texttt{\&\&} (e), \texttt{||} (ou) e \texttt{!} (não).
+
+    \item \texttt{+=} e \texttt{-=}: Somam ou subtraem um valor da variável. Com textos, o
+    \texttt{+=} acrescenta o novo texto ao final.
+\end{itemize}
+
+\subsection{Declaração de Classe, \texttt{constructor} e \texttt{this}}
+
+Uma classe é declarada com \texttt{class}. O construtor é o método \texttt{constructor},
+executado automaticamente quando o objeto é criado com \texttt{new}. Dentro da classe, os
+atributos e métodos do próprio objeto são acessados sempre com \texttt{this}:
+
+\begin{lstlisting}[style=javascript]
+class Instrumento {
+    // roda automaticamente quando o objeto é criado com new
+    constructor(nome) {
+        this.nome = nome;   // cria o atributo nome no próprio objeto
+    }
+}
+
+const teclado = new Instrumento('Teclado');  // instanciação com new
+console.log(teclado.nome);
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{constructor}: O construtor, equivalente ao \texttt{initialize} do Ruby e ao
+    \texttt{\_\_init\_\_} do Python.
+
+    \item \texttt{this}: Referencia o próprio objeto (como o \texttt{this} do C\#). Diferente do
+    Ruby, ele é \textbf{obrigatório}: dentro da classe, um atributo é sempre escrito como
+    \texttt{this.nome}.
+
+    \item \texttt{new}: Cria o objeto e chama o \texttt{constructor} com os argumentos
+    recebidos.
+
+    \item \textbf{Métodos}: São declarados no corpo da classe só com o nome, os parâmetros e as
+    chaves, como em \texttt{tocar() \{ ... \}}, sem nenhuma palavra antes. Na chamada, os
+    parênteses são obrigatórios, mesmo sem argumentos: \texttt{guitarra.tocar()}.
+
+    \item \texttt{return}: Devolve um valor para quem chamou o método. Diferente do Ruby, não há
+    retorno implícito: sem \texttt{return}, o método não devolve nada.
+\end{itemize}
+
+\subsection{Atributos Privados com \texttt{\#} e Getters com \texttt{get}}
+
+Um atributo cujo nome começa com \texttt{\#} é \textbf{privado}: ele só pode ser usado dentro da
+classe que o declarou. Diferente do \texttt{\_\_} do Python, que é uma convenção que pode ser
+contornada, o JavaScript bloqueia de verdade o acesso. Para que o valor possa ser lido de fora,
+a classe cria um \textbf{getter} com \texttt{get}:
+
+\begin{lstlisting}[style=javascript]
+class Musico {
+    #experiencia = 0;   // privado: declarado no corpo da classe
+
+    constructor(nome, funcao) {
+        this.nome = nome;       // público
+        this.funcao = funcao;   // público
+    }
+
+    get experiencia() {         // getter: usado sem parênteses
+        return this.#experiencia;
+    }
+}
+
+const brad = new Musico('Brad Delson', 'Guitarrista');
+console.log(brad.experiencia);    // funciona: usa o getter
+console.log(brad.#experiencia);   // SyntaxError: o programa nem roda
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{\#nome}: Atributo privado. Ele precisa ser \textbf{declarado} no corpo da
+    classe, fora do \texttt{constructor}, com ou sem valor inicial (\texttt{\#membros;} ou
+    \texttt{\#experiencia = 0;}). Dentro da classe, é usado sempre como \texttt{this.\#nome}, e
+    o \texttt{constructor} pode atribuir um valor a ele normalmente.
+
+    \item \textbf{Acesso de fora}: Escrever \texttt{objeto.\#nome} fora da classe é um
+    \textbf{erro de sintaxe} (\texttt{SyntaxError}). O JavaScript encontra esse erro antes de
+    executar qualquer linha, então o programa inteiro nem começa a rodar.
+
+    \item \textbf{Privado e herança}: O atributo privado pertence só à classe que o declarou. Uma
+    classe filha não consegue usar o \texttt{this.\#nome} do pai; para ler o valor, ela usa os
+    métodos e getters herdados do pai.
+
+    \item \texttt{get nome() \{ ... \}}: Cria um getter. Ele é declarado como um método, mas é
+    usado como um atributo, sem parênteses: \texttt{brad.experiencia}.
+
+    \item \textbf{Somente leitura}: Se a classe tem o getter, mas não tem um setter, uma
+    atribuição como \texttt{brad.experiencia = 10}, feita no programa principal, é simplesmente
+    ignorada, sem erro, e o valor não muda.
+\end{itemize}
+
+Quando o valor privado precisa mudar, a classe oferece um método que faz a alteração de forma
+controlada. O exemplo abaixo é complementar e não faz parte do código de referência:
+
+\begin{lstlisting}[style=javascript]
+// na classe Musico: altera o atributo privado de forma controlada
+ganharExperiencia(pontos) {
+    if (pontos > 0) {
+        this.#experiencia += pontos;
+    }
+}
+\end{lstlisting}
+
+\subsection{Herança com \texttt{extends} e \texttt{super(...)}}
+
+A classe pai é indicada com \texttt{extends}. O \texttt{constructor} da filha chama
+\texttt{super(...)} para executar o \texttt{constructor} do pai, repassando os parâmetros de que
+ele precisa (o equivalente ao \texttt{super(...)} do Ruby, ao \texttt{super().\_\_init\_\_(...)}
+do Python e ao \texttt{: base(...)} do C\#). Um dos valores repassados pode ser fixo, escrito
+diretamente na chamada:
+
+\begin{lstlisting}[style=javascript]
+class Vocalista extends Musico {   // Vocalista É UM Musico
+    constructor(nome, genero) {
+        super(nome, 'Vocalista');  // a função é sempre 'Vocalista'
+        this.generoMusical = genero;
+    }
+}
+\end{lstlisting}
+
+Se a filha \textbf{não} define um \texttt{constructor}, ela herda automaticamente o do pai e é
+criada com os mesmos parâmetros. O exemplo abaixo é complementar e não faz parte do código de
+referência:
+
+\begin{lstlisting}[style=javascript]
+class Baixista extends Musico {   // sem constructor próprio
+    executarAcao() {
+        return `${this.nome} segura a base no baixo!`;
+    }
+}
+
+// usa o constructor herdado de Musico
+const baixista = new Baixista('Phoenix', 'Baixista');
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{class Filha extends Pai}: Declara a herança (relação ``É UM'').
+
+    \item \texttt{super(...)} \textbf{vem primeiro}: No \texttt{constructor} da filha,
+    \texttt{super(...)} deve ser chamado \textbf{antes} de qualquer uso de \texttt{this}. Caso
+    contrário, o JavaScript lança um \texttt{ReferenceError}.
+
+    \item \textbf{O que é herdado}: A filha herda os métodos, os getters e os atributos públicos
+    do pai. Os atributos privados (\texttt{\#}) continuam acessíveis só pelos métodos do pai.
+\end{itemize}
+
+\subsection{Sobrescrita e \texttt{super.metodo()}}
+
+Em JavaScript não existem \texttt{virtual} nem \texttt{override}: basta a classe filha definir
+um método com o \textbf{mesmo nome} do método do pai:
+
+\begin{lstlisting}[style=javascript]
+// Na Classe Base (Musico):
+executarAcao() {
+    return `${this.nome} (${this.funcao}) está se preparando...`;
+}
+
+// Na Classe Derivada (Vocalista):
+executarAcao() {
+    return `${this.nome} canta ${this.generoMusical}!`;
+}
+\end{lstlisting}
+
+Dentro do método sobrescrito, \texttt{super.metodo()} executa a versão do pai (o equivalente ao
+\texttt{super} do Ruby, ao \texttt{super().metodo()} do Python e ao \texttt{base.Metodo()} do
+C\#). O exemplo abaixo é complementar e não faz parte do código de referência:
+
+\begin{lstlisting}[style=javascript]
+// Na Classe Derivada: reaproveita o texto do pai
+executarAcao() {
+    return super.executarAcao() + ' E solta a voz!';
+}
+\end{lstlisting}
+
+\subsection{Interfaces Simuladas com \texttt{throw new Error}}
+
+Para simular um contrato, a classe base declara o método obrigatório com um corpo que apenas
+lança um erro. Cada filha sobrescreve o método com o seu próprio comportamento:
+
+\begin{lstlisting}[style=javascript]
+class Instrumento {
+    constructor(nome) {
+        this.nome = nome;
+    }
+
+    // contrato: toda filha deve sobrescrever tocar()
+    tocar() {
+        throw new Error(
+            `O instrumento ${this.nome} deve implementar o método 'tocar()'`
+        );
+    }
+}
+
+class Bateria extends Instrumento {
+    constructor(marca) {
+        super('Bateria');
+        this.marca = marca;
+    }
+
+    tocar() {   // cumpre o contrato
+        return `Batendo um ritmo pesado na ${this.marca}!`;
+    }
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{throw}: Lança um erro e interrompe o programa. O Node.js exibe a mensagem e a
+    linha em que o erro aconteceu.
+
+    \item \texttt{new Error(mensagem)}: Cria o objeto de erro com a mensagem informada.
+
+    \item \textbf{Sem verificação antecipada}: A classe base continua podendo ser instanciada; o
+    erro só aparece quando o método é chamado.
+\end{itemize}
+
+O exemplo abaixo é complementar e não faz parte do código de referência:
+
+\begin{lstlisting}[style=javascript]
+const generico = new Instrumento('Flauta');  // funciona: objeto criado
+generico.tocar();   // Error: o erro só aparece aqui, na chamada
+\end{lstlisting}
+
+\subsection{Composição e Agregação}
+
+A diferença entre os dois relacionamentos está em \textbf{onde a parte é criada}. Na composição,
+o \texttt{new} da parte acontece dentro da classe dona, no \texttt{constructor} ou em qualquer
+outro método dela. Na agregação, a parte é criada fora e chega pronta, por parâmetro:
+
+\begin{lstlisting}[style=javascript]
+// COMPOSIÇÃO: o Map é criado DENTRO do constructor da Banda
+this.#repertorio = new Map();
+
+// AGREGAÇÃO: os músicos são criados FORA e só recebidos pela Banda
+const linkinPark = new Banda('Linkin Park',
+                             [chester, mike, brad, rob, phoenix]);
+\end{lstlisting}
+
+Com uma classe própria, a composição funciona do mesmo jeito: basta criar a parte com
+\texttt{new} dentro da classe dona. O exemplo abaixo é complementar e não faz parte do código de
+referência:
+
+\begin{lstlisting}[style=javascript]
+class Palco {
+    #iluminacao;
+
+    constructor(nome) {
+        this.nome = nome;
+        // composição: a Iluminacao nasce junto com o Palco
+        this.#iluminacao = new Iluminacao('Refletores');
+    }
+}
+\end{lstlisting}
+
+\subsection{Arrays: Criação, \texttt{push}, \texttt{forEach} e Arrow Functions}
+
+O \texttt{Array} é a coleção de tamanho dinâmico do JavaScript. Como a tipagem é dinâmica, um
+mesmo array pode guardar objetos de classes diferentes, o que possibilita o polimorfismo ao
+percorrê-lo:
+
+\begin{lstlisting}[style=javascript]
+const membros = [];            // array vazio
+membros.push(chester);         // adiciona no final
+membros.push(brad);
+console.log(membros.length);   // quantidade de elementos
+
+// forEach executa a função para cada elemento
+membros.forEach(m => {
+    console.log(m.executarAcao());
+});
+
+membros.forEach(m => console.log(m.nome));   // versão em uma linha
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{[]}: Cria um array vazio. \texttt{[a, b]} cria um array já preenchido.
+
+    \item \texttt{array.push(objeto)}: Insere um objeto no final do array (o equivalente ao
+    \texttt{<{}<} do Ruby e ao \texttt{append} do Python).
+
+    \item \texttt{array.length}: Retorna a quantidade de elementos.
+
+    \item \texttt{.forEach(função)}: Executa a função uma vez para cada elemento, recebendo o
+    elemento da vez como parâmetro.
+
+    \item \textbf{Arrow function}: Forma curta de escrever uma função. Em
+    \texttt{m => m.nome}, \texttt{m} é o parâmetro e o valor da expressão depois da seta é
+    retornado. Com chaves, como em \texttt{m => \{ ... \}}, o corpo pode ter várias linhas, mas
+    só retorna um valor se usar \texttt{return}. Com dois ou mais parâmetros, eles ficam entre
+    parênteses: \texttt{(a, b) => ...}.
+
+    \item \texttt{constructor(nome, membrosIniciais = [])}: Um parâmetro pode ter \textbf{valor
+    padrão}, usado quando o argumento não é informado.
+\end{itemize}
+
+\subsection{Filtrar e Buscar: \texttt{filter}, \texttt{find} e \texttt{instanceof}}
+
+Os arrays também têm métodos que percorrem os elementos e testam uma condição, escrita como
+arrow function. O \texttt{find} do exemplo abaixo usa um nome fixo e é complementar; no código
+de referência, o nome procurado vem de um parâmetro:
+
+\begin{lstlisting}[style=javascript]
+// filter: novo array só com os elementos aprovados pela condição
+const guitarristas = membros.filter(m => m.instrumento instanceof Guitarra);
+
+// find: o PRIMEIRO elemento que passa na condição
+const musico = membros.find(m => m.nome === 'Brad Delson');
+if (musico) {
+    console.log(`Encontrado: ${musico.nome}`);
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{.filter(condição)}: Devolve um \textbf{novo} array só com os elementos para os
+    quais a condição resultou em \texttt{true}. Se nenhum passar, o array volta vazio.
+
+    \item \texttt{.find(condição)}: Devolve o \textbf{primeiro} elemento que passa na condição.
+    Se nenhum passar, devolve \texttt{undefined}, e por isso o resultado costuma ser testado com
+    \texttt{if}.
+
+    \item \texttt{objeto instanceof Classe}: Retorna \texttt{true} se o objeto for da classe
+    informada ou de uma filha dela (o equivalente ao \texttt{is\_a?} do Ruby e ao
+    \texttt{isinstance} do Python).
+\end{itemize}
+
+\subsection{Outros Recursos do Código de Referência}
+
+Os recursos abaixo aparecem no código de referência, mas não são necessários nos exercícios:
+
+\begin{itemize}
+    \item \texttt{new Map()}: Cria um \textbf{dicionário}, que guarda pares chave e valor.
+    \texttt{.set(chave, valor)} adiciona um par, \texttt{.get(chave)} devolve o valor e
+    \texttt{.size} informa a quantidade de pares.
+
+    \item \texttt{typeof valor}: Retorna o tipo do valor como texto, por exemplo
+    \texttt{'function'}, \texttt{'string'} ou \texttt{'number'}.
+
+    \item \textbf{Objeto literal}: \texttt{\{ nome: 'Teclado', tocar: () => '...' \}} cria um
+    objeto na hora, sem classe, com os atributos e métodos escritos entre chaves.
+
+    \item \textbf{Propriedade criada de fora}: Em JavaScript, uma atribuição como
+    \texttt{musico.instrumento = ...} cria o atributo no objeto, mesmo que a classe não o
+    declare. A linguagem permite, mas isso tira da classe o controle sobre os próprios dados.
+\end{itemize}
+
+\section{Código de Referência Completo}
+
+Abaixo está a implementação de referência utilizada para exemplificação do paradigma POO em
+JavaScript:
+
+\begin{lstlisting}[style=javascript, caption={Exemplo de Aplicação de POO em JavaScript}]
+// CLASSES COMPONENTES E ABSTRATAS (Interfaces)
+
+// simulação de interface/contrato — JavaScript não tem interface nativa
+// toda classe que herdar de Instrumento deve implementar tocar()
+// o JavaScript não confere isso antes: se a classe não implementar, o
+// erro só aparece em tempo de execução, quando tocar() for chamado
+class Instrumento {
+    constructor(nome) {
+        this.nome = nome;
+    }
+
+    // VIRTUAL (equivalente)
+    // método que as classes filhas vão sobrescrever com o comportamento
+    // específico delas
+    tocar() {
+        throw new Error(
+            `O instrumento ${this.nome} deve implementar o método 'tocar()'`
+        );
+    }
+}
+
+// AGREGAÇÃO (Musico -> Instrumento)
+// a Guitarra é criada fora (no main) e só depois entregue ao Musico
+// pela Banda, por isso o Musico apenas guarda uma referência a ela
+// herda de Instrumento e sobrescreve tocar() com seu comportamento
+// específico
+class Guitarra extends Instrumento {
+    constructor(modelo) {
+        // super() chama o constructor do pai (Instrumento)
+        // equivale ao : base(...) do C#, ao super().__init__() do
+        // Python e ao super(...) do Ruby
+        super('Guitarra');
+        this.modelo = modelo;
+    }
+
+    // SOBRESCRITA (override)
+    tocar() {
+        return `Tocando um riff na ${this.modelo}!`;
+    }
+}
+
+class Bateria extends Instrumento {
+    constructor(marca) {
+        super('Bateria');
+        this.marca = marca;
+    }
+
+    tocar() {
+        return `Batendo um ritmo pesado na ${this.marca}!`;
+    }
+}
+
+
+// HERANÇA, POLIMORFISMO E ENCAPSULAMENTO
+
+class Musico {
+    // ENCAPSULAMENTO
+    // # é a sintaxe do JavaScript para atributo privado
+    // equivale ao private do C# e do Java: diferente do __ do Python,
+    // que pode ser contornado, o JavaScript bloqueia de verdade o acesso
+    // fora da classe (escrever musico.#experiencia lá fora é um erro)
+    #experiencia = 0;
+
+    constructor(nome, funcao) {
+        this.nome = nome;
+        this.funcao = funcao;
+    }
+
+    // GETTER
+    // get é a sintaxe do JavaScript para criar um getter
+    // permite ler this.#experiencia de fora com musico.experiencia
+    // (sem parênteses)
+    get experiencia() {
+        return this.#experiencia;
+    }
+
+    // VIRTUAL (equivalente)
+    executarAcao() {
+        return `${this.nome} (${this.funcao}) está se preparando...`;
+    }
+}
+
+// HERANÇA
+// Vocalista herda de Musico com extends
+// a relação é: "Vocalista É UM Musico"
+class Vocalista extends Musico {
+    constructor(nome, genero) {
+        super(nome, 'Vocalista');
+        this.generoMusical = genero;
+    }
+
+    // SOBRESCRITA (override)
+    executarAcao() {
+        return `${this.nome} canta ${this.generoMusical}!`;
+    }
+}
+
+
+// AGREGAÇÃO E COLLECTIONS
+
+class Banda {
+    // # tornando os atributos privados
+    // membros e repertório não devem ser alterados diretamente de fora
+    #membros;
+    #repertorio;
+
+    // AGREGAÇÃO
+    // membrosIniciais = [] é um parâmetro com valor padrão
+    // se nenhum array for passado, começa vazio
+    // os Musicos já existiam antes da Banda e continuam existindo se
+    // ela sumir
+    constructor(nome, membrosIniciais = []) {
+        this.nome = nome;
+        this.#membros = membrosIniciais;
+
+        // Map é uma estrutura de dados do JavaScript
+        // funciona como um dicionário: guarda pares chave -> valor
+        // aqui vai guardar título -> duração das músicas
+        // COMPOSIÇÃO: o Map é criado aqui dentro e só existe na Banda
+        this.#repertorio = new Map();
+    }
+
+    adicionarInstrumento(musicoNome, instrumento) {
+        // .find() percorre o array e retorna o primeiro elemento que
+        // passa na condição
+        // m => m.nome === musicoNome é uma arrow function — sintaxe
+        // curta do JavaScript
+        // equivale a escrever function(m) { return m.nome === musicoNome }
+        const musico = this.#membros.find(m => m.nome === musicoNome);
+        if (musico) {
+            musico.instrumento = instrumento;
+            console.log(
+                `[SETUP] ${musicoNome} agora tem um(a) ${instrumento.nome}.`
+            );
+        }
+    }
+
+    adicionarMusica(titulo, duracao) {
+        // .set() adiciona um par chave -> valor no Map
+        this.#repertorio.set(titulo, duracao);
+    }
+
+    listarGuitarristas() {
+        // .filter() percorre o array e retorna só os elementos que passam
+        // na condição
+        // instanceof verifica se o objeto é uma instância de determinada
+        // classe
+        // equivale ao is_a? do Ruby ou isinstance() do Python
+        return this.#membros.filter(m => m.instrumento instanceof Guitarra);
+    }
+
+    iniciarShow() {
+        console.log(`\n--- ${this.nome} INICIA O SHOW! ---`);
+
+        // POLIMORFISMO EM AÇÃO
+        // .forEach() percorre o array — equivale ao .each do Ruby ou ao
+        // for x in lista do Python
+        // o mesmo executarAcao() para todos, mas cada um executa o seu
+        // próprio
+        this.#membros.forEach(m => {
+            let acao = m.executarAcao();
+
+            // typeof verifica o tipo de uma variável em tempo de execução
+            // aqui garante que instrumento.tocar realmente é uma função
+            // antes de chamar
+            if (m.instrumento && typeof m.instrumento.tocar === 'function') {
+                acao += ` | ${m.instrumento.tocar()}`;
+            }
+            console.log(acao);
+        });
+    }
+}
+
+
+// --- MAIN ---
+
+// criação dos instrumentos: eles existem antes de serem entregues aos
+// músicos (agregação)
+const guitarraRiff = new Guitarra('PRS Custom');
+const guitarraSolo = new Guitarra('Ibanez');
+const bateria      = new Bateria('Pearl');
+
+// HERANÇA em ação — cada um é instanciado do seu tipo específico
+const chester = new Vocalista('Chester Bennington', 'Nu Metal');
+const mike    = new Vocalista('Mike Shinoda',       'Hip Hop');
+const brad    = new Musico('Brad Delson', 'Guitarrista');
+const rob     = new Musico('Rob Bourdon', 'Baterista');
+const phoenix = new Musico('Phoenix',     'Baixista');
+
+// testando getter — acessa #experiencia sem parênteses por causa do get
+console.log(`Experiência de Chester: ${chester.experiencia}`);
+
+// AGREGAÇÃO: músicos já existiam antes da banda ser criada
+const linkinPark = new Banda('Linkin Park',
+                             [chester, mike, brad, rob, phoenix]);
+
+linkinPark.adicionarInstrumento('Brad Delson', guitarraRiff);
+linkinPark.adicionarInstrumento('Rob Bourdon', bateria);
+
+// objeto literal passado direto como instrumento — JavaScript permite
+// isso
+// funciona porque tem o método tocar(), que é tudo que a Banda precisa
+// (duck typing)
+linkinPark.adicionarInstrumento('Mike Shinoda', {
+    nome: 'Teclado',
+    tocar: () => 'Adiciona synths marcantes.'
+});
+
+linkinPark.adicionarMusica('Somewhere I Belong', 3.5);
+linkinPark.adicionarMusica('Fighting Myself',       3.1);
+
+linkinPark.iniciarShow();
+
+console.log('\nGuitarristas Ativos:');
+linkinPark.listarGuitarristas().forEach(g => console.log(`- ${g.nome}`));
+\end{lstlisting}
+
+\section{Exercícios Práticos do Módulo}
+
+\begin{exercicio}{Exercício 1: Encapsulamento e Herança (Duelo no Ginásio)}
+No mundo de \textit{Pokémon}, treinadores levam criaturas chamadas Pokémon para batalhas em
+\textbf{ginásios}. Cada Pokémon pertence a uma \textbf{espécie}, tem um \textbf{tipo}, que
+define os seus golpes, e uma quantidade de vida. A vida não pode ser alterada diretamente de
+fora: só os golpes recebidos em combate podem reduzi-la, e ela nunca fica abaixo de zero.
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Espécie}: o ``modelo'' de um Pokémon, como Squirtle ou Bulbasaur. No código,
+    cada espécie é uma classe.
+    \item \textbf{Apelido}: nome que o treinador dá ao seu Pokémon. Dois Squirtles podem ter
+    apelidos diferentes.
+    \item \textbf{Tipo}: elemento do Pokémon. Todo Squirtle é do tipo Água, e todo Bulbasaur é
+    do tipo Planta.
+    \item \textbf{Ginásio}: local onde acontecem as batalhas oficiais.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{Pokemon}: o \texttt{constructor} recebe \texttt{apelido}, \texttt{tipo} e
+    \texttt{vidaInicial}. \texttt{apelido} e \texttt{tipo} são atributos públicos, e a vida fica
+    no atributo privado \texttt{\#vida}, que começa com o valor de \texttt{vidaInicial}. A
+    classe tem o getter \texttt{vida} (com \texttt{get}) e nenhum setter: de fora, a vida só pode
+    ser lida. Tem também o método \texttt{sofrerDano(pontos)}, que subtrai os pontos da vida sem
+    deixá-la negativa (se passar de zero, ela fica em 0) e imprime o apelido e a vida restante; e
+    o método \texttt{atacar(alvo)}, que recebe outro Pokémon, imprime um ataque genérico e chama
+    \texttt{alvo.sofrerDano(10)}.
+
+    \item \texttt{Squirtle}: herda de \texttt{Pokemon}. O \texttt{constructor} recebe
+    \texttt{apelido} e \texttt{vidaInicial} e chama \texttt{super(...)} passando o tipo fixo
+    \texttt{'Água'}. Sobrescreve \texttt{atacar(alvo)} para imprimir um golpe de água à sua
+    escolha e chamar \texttt{alvo.sofrerDano(20)}.
+
+    \item \texttt{Bulbasaur}: herda de \texttt{Pokemon}, do mesmo jeito, com o tipo fixo
+    \texttt{'Planta'}. Sobrescreve \texttt{atacar(alvo)} para imprimir um golpe de planta à sua
+    escolha e chamar \texttt{alvo.sofrerDano(15)}.
+\end{itemize}
+
+No programa principal, crie um \texttt{Squirtle} e um \texttt{Bulbasaur}, com apelidos à sua
+escolha. A vida inicial do Squirtle também é à sua escolha, mas o Bulbasaur deve começar com
+30. Faça o Bulbasaur atacar o Squirtle uma vez e o Squirtle atacar o Bulbasaur duas vezes.
+Depois, imprima a vida dos dois usando o getter. Por fim, tente imprimir o \texttt{\#vida} de
+um dos Pokémon diretamente no programa principal e observe o erro: o programa nem chega a
+rodar. Depois, transforme essa linha em comentário (\texttt{//}) para o programa voltar a
+rodar.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 2: Interface, Composição e Agregação (Esquadrão do Protocolo)}
+\textit{Valorant} é um jogo de tiro tático em que dois times de cinco \textbf{agentes} se
+enfrentam. Os agentes fazem parte do \textbf{Protocolo VALORANT}, uma organização secreta, e
+cada um tem uma \textbf{função} no time, com uma habilidade própria. Todo agente entra na
+partida com uma \textbf{pistola}, que é dele e é criada junto com ele (composição). Os agentes
+já existem antes de serem reunidos em um \textbf{esquadrão} (agregação).
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Agente}: personagem jogável de Valorant. Cada agente é conhecido pelo seu
+    \textbf{codinome}.
+    \item \textbf{Protocolo VALORANT}: organização que reúne os agentes. No código, é a classe
+    base de todos eles.
+    \item \textbf{Controlador}: função que bloqueia a visão dos inimigos, por exemplo com
+    cortinas de fumaça.
+    \item \textbf{Iniciador}: função que abre caminho para o time, revelando ou atordoando
+    inimigos.
+    \item \textbf{Duelista}: função que entra primeiro no combate e busca eliminar os inimigos.
+    \item \textbf{Esquadrão}: o time de agentes que joga junto.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{Pistola} (parte composta): o \texttt{constructor} recebe e guarda
+    \texttt{modelo}.
+
+    \item \texttt{AgenteProtocolo} (classe base, com contrato e composição): o
+    \texttt{constructor} recebe \texttt{codinome} e \texttt{modeloDaPistola}, guarda
+    \texttt{codinome} em um atributo público e cria a \texttt{Pistola} \textbf{dentro} dele, com
+    o modelo recebido, guardando-a no atributo privado \texttt{\#pistola}. O método
+    \texttt{usarHabilidade()} apenas lança um erro com \texttt{throw new Error(...)}, com uma
+    mensagem à sua escolha. O método \texttt{entrarEmCombate()} imprime o codinome, o modelo da
+    pistola e o texto \textbf{retornado} por \texttt{usarHabilidade()}.
+
+    \item \texttt{Controlador}, \texttt{Iniciador} e \texttt{Duelista}: herdam de
+    \texttt{AgenteProtocolo}, \textbf{sem} \texttt{constructor} próprio. Cada uma sobrescreve
+    \texttt{usarHabilidade()} para \textbf{retornar} um texto com uma habilidade típica da sua
+    função, à sua escolha.
+
+    \item \texttt{Esquadrao} (agregação): o \texttt{constructor} recebe \texttt{nome} e um array
+    de agentes já criados, guardado no atributo privado \texttt{\#agentes}. O método
+    \texttt{iniciarPartida()} imprime o nome do esquadrão e, com \texttt{forEach}, chama
+    \texttt{entrarEmCombate()} de cada agente (polimorfismo). O método
+    \texttt{listarControladores()} usa \texttt{filter} com \texttt{instanceof} para
+    \textbf{retornar} um array só com os agentes da classe \texttt{Controlador}.
+\end{itemize}
+
+No programa principal, crie dois controladores, um iniciador e um duelista, com codinomes e
+modelos de pistola à sua escolha. Reúna os quatro em um esquadrão, chame
+\texttt{iniciarPartida()} e imprima, com \texttt{forEach}, o codinome de cada agente do array
+retornado por \texttt{listarControladores()}. Por fim, crie um \texttt{AgenteProtocolo}
+diretamente e, na linha seguinte, chame \texttt{entrarEmCombate()} nele. Observe que o objeto é
+criado, mas a chamada gera um erro. Depois, transforme a linha da chamada em comentário
+(\texttt{//}) para o programa voltar a rodar.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 3: Composição e Agregação (Os Segredos da Cabana)}
+Em \textit{Gravity Falls}, dois irmãos gêmeos passam as férias em uma cidadezinha cheia de
+mistérios, na casa do tio-avô, que administra a \textbf{Cabana do Mistério}: uma loja de
+souvenirs e falsas atrações para turistas. Lá, eles encontram um \textbf{diário misterioso},
+escrito por um autor desconhecido, que registra as criaturas sobrenaturais da cidade. Cada
+\textbf{ficha} é escrita dentro do diário e só existe nele (composição). Já os
+\textbf{funcionários} da Cabana são moradores da cidade, que existiam antes de serem contratados
+e continuam existindo fora dela (agregação).
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Diário misterioso}: caderno que registra as criaturas da cidade. Existem três
+    diários, cada um identificado por um número.
+    \item \textbf{Ficha de criatura}: registro de uma criatura no diário, com o nome dela e o seu
+    nível de perigo.
+    \item \textbf{Nível de perigo}: número de 1 (inofensiva) a 5 (muito perigosa). Neste
+    exercício, ele não precisa ser validado.
+    \item \textbf{Cabana do Mistério}: loja e atração turística da cidade, que tem um dono e
+    funcionários.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{FichaDeCriatura}: o \texttt{constructor} recebe \texttt{criatura} (o nome da
+    criatura) e \texttt{nivelDePerigo}. O método \texttt{descrever()} \textbf{retorna} um texto
+    com os dois dados.
+
+    \item \texttt{DiarioMisterioso}: o \texttt{constructor} recebe \texttt{numero} (o número do
+    diário), e a classe tem o atributo privado \texttt{\#fichas}, que começa como um array
+    vazio. O método \texttt{anotar(criatura, nivelDePerigo)} cria uma
+    \texttt{FichaDeCriatura} \textbf{dentro} do método e a adiciona ao \texttt{\#fichas} com
+    \texttt{push}. O método \texttt{exibirFichas()} imprime o número do diário e, com
+    \texttt{forEach}, o texto retornado por \texttt{descrever()} de cada ficha.
+
+    \item \texttt{Funcionario}: o \texttt{constructor} recebe \texttt{nome} e \texttt{cargo}.
+
+    \item \texttt{CabanaDoMisterio}: o \texttt{constructor} recebe \texttt{dono} (o nome do
+    dono), e a classe tem o atributo privado \texttt{\#funcionarios}, que começa como um array
+    vazio. O método \texttt{contratar(funcionario)} adiciona um funcionário já criado ao
+    \texttt{\#funcionarios} com \texttt{push}. O método \texttt{abrirAsPortas()} imprime o nome
+    do dono e, com \texttt{forEach}, o nome e o cargo de cada funcionário.
+\end{itemize}
+
+No programa principal, crie um diário com o número à sua escolha, anote nele duas ou três
+criaturas à sua escolha e chame \texttt{exibirFichas()}. Depois, crie dois funcionários
+\textbf{antes} da Cabana, à sua escolha. Por fim, crie a Cabana, contrate os dois e chame
+\texttt{abrirAsPortas()}. Explique, em um comentário no código, o que é composição e o que é
+agregação no seu programa.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 4: Revisão Geral (As Aranhas de Yorknew)}
+Em \textit{Hunter x Hunter}, \textbf{Hunters} são aventureiros licenciados que dominam o
+\textbf{Nen}, a técnica de controlar a própria energia vital, chamada de \textbf{aura}. Todo
+usuário de Nen pertence a um \textbf{tipo de Nen}, que define o seu estilo de luta. A
+\textbf{Trupe Fantasma}, um grupo de ladrões cujos membros são chamados de \textbf{Aranhas}, foi
+avistada em uma cidade, e três Hunters de tipos diferentes vão enfrentá-la.
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Nen}: técnica de controlar a aura. Todo usuário de Nen sabe atacar com ela.
+    \item \textbf{Intensificador}: tipo de Nen que fortalece o próprio corpo, deixando os golpes
+    mais fortes.
+    \item \textbf{Transmutador}: tipo de Nen que muda as propriedades da aura, por exemplo
+    transformando-a em eletricidade.
+    \item \textbf{Materializador}: tipo de Nen que cria objetos feitos de aura, como correntes.
+    \item \textbf{Aranha}: membro da Trupe Fantasma. Cada Aranha tem um número tatuado, que a
+    identifica no grupo.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{UsuarioDeNen} (classe base): o \texttt{constructor} recebe \texttt{nome}. O
+    método \texttt{atacar(alvo)} recebe uma \texttt{Aranha} e imprime um ataque genérico de aura
+    contra ela, citando o nome dos dois.
+
+    \item \texttt{Intensificador}, \texttt{Transmutador} e \texttt{Materializador}: herdam de
+    \texttt{UsuarioDeNen}, \textbf{sem} \texttt{constructor} próprio. Cada uma sobrescreve
+    \texttt{atacar(alvo)} para imprimir um ataque típico do seu tipo de Nen, à sua escolha,
+    citando o nome dos dois.
+
+    \item \texttt{Aranha}: o \texttt{constructor} recebe \texttt{nome} e \texttt{numero} (o
+    número tatuado).
+
+    \item \texttt{TrupeFantasma} (agregação): o \texttt{constructor} recebe \texttt{cidade} e um
+    array de Aranhas já criadas, com valor padrão \texttt{[]}, guardado no atributo privado
+    \texttt{\#aranhas}. O método \texttt{revelarAranhas()} imprime a cidade e, com
+    \texttt{forEach}, o número e o nome de cada Aranha. O método \texttt{buscarAranha(numero)}
+    usa \texttt{find} para \textbf{retornar} a Aranha com o número informado.
+\end{itemize}
+
+No programa principal, crie duas Aranhas, à sua escolha, \textbf{antes} da Trupe. Crie a Trupe
+com uma cidade à sua escolha, chame \texttt{revelarAranhas()} e use
+\texttt{buscarAranha(...)} para pegar uma das duas Aranhas. Depois, crie um array com um
+usuário de Nen de cada tipo (\texttt{Intensificador}, \texttt{Transmutador} e
+\texttt{Materializador}), com nomes à sua escolha, e percorra-o com \texttt{forEach}, fazendo
+cada um chamar \texttt{atacar(...)} contra a Aranha encontrada.
+\end{exercicio}

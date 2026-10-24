@@ -1,0 +1,1080 @@
+% =====================================================================
+% RELATÓRIO 11 — POO com Java
+% Capítulo para ser incorporado à Apostila S01 (OO + PF), após o Relatório 10.
+% =====================================================================
+
+% ---------------------------------------------------------------------
+% Definições usadas neste capítulo (podem ser movidas para o preâmbulo).
+% - java: estilo que usa a linguagem Java do listings e corrige a
+%   acentuação dentro dos códigos (mesma solução dos estilos anteriores).
+% - azulRelatorio e exercicio: já são criados no Relatório 7. As linhas
+%   abaixo só os recriam se este capítulo for compilado sem ele.
+% ---------------------------------------------------------------------
+\lstdefinestyle{java}{
+    language=Java,
+    literate=
+        {á}{{\'a}}1 {à}{{\`a}}1 {ã}{{\~a}}1 {â}{{\^a}}1
+        {é}{{\'e}}1 {ê}{{\^e}}1 {è}{{\`e}}1 {í}{{\'\i}}1
+        {ó}{{\'o}}1 {õ}{{\~o}}1 {ô}{{\^o}}1 {ú}{{\'u}}1
+        {ç}{{\c{c}}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Ç}{{\c{C}}}1
+        {Ã}{{\~A}}1 {Â}{{\^A}}1 {Ê}{{\^E}}1 {Õ}{{\~O}}1
+        {—}{{\textemdash}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+}
+
+\definecolor{azulRelatorio}{rgb}{0.1,0.3,0.8}
+
+\ifcsname exercicio\endcsname\else
+\newtcolorbox{exercicio}[1]{
+    colback=white,
+    colframe=azulRelatorio,
+    coltitle=white,
+    fonttitle=\normalfont,
+    boxrule=0.8pt,
+    arc=1.5mm,
+    title={#1}
+}
+\fi
+
+\chapter{Relatório 11: Programação Orientada a Objetos em Java}
+
+\section{Fundamentos Teóricos e Pilares da POO}
+
+No Relatório 10, o JavaScript mostrou uma linguagem de tipagem dinâmica, em que os contratos
+entre classes só são conferidos durante a execução. O \textbf{Java} vai no sentido oposto. Ele
+tem \textbf{tipagem estática}: todo atributo, parâmetro, variável e retorno de método declara o
+seu tipo. O código é \textbf{compilado} antes de rodar, e o resultado roda na \textbf{JVM}
+(\textit{Java Virtual Machine}), o que permite que o mesmo programa funcione em qualquer sistema
+operacional. Em Java, \textbf{tudo fica dentro de uma classe}: não existem funções soltas, e até
+o programa principal é um método. As interfaces e as classes abstratas são nativas, e o
+compilador confere os contratos antes de o programa rodar. A sintaxe lembra muito a do C\#
+(Relatório 7): chaves, ponto e vírgula e modificadores de acesso como \texttt{public} e
+\texttt{private}. Assim como nas linguagens anteriores, a memória é liberada automaticamente
+pelo \textbf{Garbage Collector}.
+
+A tabela abaixo relaciona as estruturas já vistas em JavaScript com as equivalentes em Java:
+
+\begin{center}
+\small
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Conceito} & \textbf{JavaScript (Relatório 10)} & \textbf{Java (Relatório 11)} \\
+\hline
+Tipos & não são declarados & declarados: \texttt{String nome} \\
+Construtor & \texttt{constructor(nome)} & \texttt{public Autor(String nome)} \\
+Instanciação & \texttt{new Autor(nome)} & \texttt{Autor a = new Autor(nome);} \\
+Atributo privado & \texttt{\#nome} & \texttt{private String nome;} \\
+Getter & \texttt{get nome() \{ ... \}} & \texttt{public String getNome()} \\
+Herança & \texttt{class Cliente extends Pessoa} & igual, com \texttt{extends} \\
+Construtor do pai & \texttt{super(nome)} & \texttt{super(nome);} \\
+Sobrescrita & basta redefinir o método & redefinir + \texttt{@Override} \\
+Interface & \texttt{throw new Error()} na base & \texttt{interface} + \texttt{implements} \\
+Classe abstrata & não existe & \texttt{abstract class} \\
+Lista & \texttt{[]} e \texttt{.push()} & \texttt{ArrayList<Tipo>} e \texttt{.add()} \\
+Dicionário & \texttt{new Map()} e \texttt{.set()} & \texttt{HashMap<Chave, Valor>} e \texttt{.put()} \\
+Repetição & \texttt{lista.forEach(x => ...)} & \texttt{for (Tipo x : lista)} \\
+Saída & \texttt{console.log(...)} & \texttt{System.out.println(...)} \\
+\hline
+\end{tabular}
+\end{center}
+
+Os quatro pilares continuam valendo, agora ilustrados com o sistema de uma biblioteca, com
+autores, livros, estantes, clientes e bibliotecários:
+
+\begin{itemize}
+    \item \textbf{Abstração}: Cada objeto guarda apenas o que importa para a biblioteca. Um
+    livro precisa de ISBN, título e autor.
+
+    \item \textbf{Encapsulamento}: Os atributos de \texttt{Autor}, \texttt{Livros} e
+    \texttt{Estante} são \texttt{private} e só são lidos pelos getters. Os de \texttt{Pessoa} são
+    \texttt{protected}.
+
+    \item \textbf{Herança}: \texttt{Cliente} e \texttt{Bibliotecario} reaproveitam a estrutura de
+    \texttt{Pessoa} (relação ``\textbf{É UM}'': um Cliente é uma Pessoa).
+
+    \item \textbf{Polimorfismo}: Um \texttt{Cliente} ou um \texttt{Bibliotecario} pode ser
+    guardado em uma variável do tipo \texttt{Pessoa}, e qualquer classe que implemente
+    \texttt{GerenciaInventario} pode ser usada onde a interface é esperada. Quando a filha
+    sobrescreve um método, é a versão dela que roda.
+\end{itemize}
+
+\subsection{Interfaces e Classes Abstratas: Contratos Conferidos pelo Compilador}
+
+A novidade deste relatório é que o Java tem as duas formas de contrato \textbf{nativas}:
+
+\begin{itemize}
+    \item \textbf{Interface} (\texttt{interface}): Define apenas \textbf{quais} métodos uma
+    classe deve ter, sem implementação. A classe que assina o contrato usa \texttt{implements}
+    e é obrigada a implementar todos os métodos. No código de referência, \texttt{Bibliotecario}
+    implementa a interface \texttt{GerenciaInventario}.
+
+    \item \textbf{Classe abstrata} (\texttt{abstract class}): Fica no meio do caminho. Ela pode
+    ter atributos, construtor e métodos prontos, e também \textbf{métodos abstratos}, que só têm
+    a assinatura. A classe filha usa \texttt{extends} e é obrigada a implementar os métodos
+    abstratos. Uma classe abstrata nunca pode ser instanciada. No código de referência,
+    \texttt{Pessoa} é abstrata.
+\end{itemize}
+
+Use uma interface quando classes sem nenhuma relação entre si precisam cumprir o mesmo contrato,
+e uma classe abstrata quando as filhas compartilham uma base comum, mas cada uma precisa
+completar uma parte. Uma classe herda de uma única classe, mas pode implementar várias
+interfaces.
+
+A grande diferença em relação ao Ruby e ao JavaScript é o \textbf{momento} em que o contrato é
+conferido. Naquelas linguagens, o erro só aparecia quando o método que faltava era chamado,
+durante a execução. Em Java, o \textbf{compilador} confere tudo antes: se uma classe esquecer
+um método obrigatório, ou se o programa tentar instanciar uma classe abstrata, o código nem
+chega a compilar.
+
+\subsection{Relacionamentos entre Classes}
+
+A composição e a agregação, vistas nos relatórios anteriores, continuam valendo (relação
+``\textbf{TEM UM}''):
+
+\begin{itemize}
+    \item \textbf{Composição (relação forte)}: A parte é criada \textbf{dentro} do objeto dono e
+    ``morre'' junto com ele. Exemplo: o \texttt{HashMap} do inventário é criado dentro do
+    construtor da própria \texttt{Estante}.
+
+    \item \textbf{Agregação (relação fraca)}: A parte é criada \textbf{fora} e o dono apenas
+    guarda uma referência a ela. Exemplo: o \texttt{Autor} é criado antes e só depois é entregue
+    ao livro, e os livros são criados no programa principal e depois entregues à estante e ao
+    cliente.
+\end{itemize}
+
+\section{Documentação Sintática das Estruturas de POO}
+
+Esta seção detalha todas as palavras-chave e construções sintáticas utilizadas na implementação
+de POO em Java. Os exercícios deste relatório devem ser resolvidos \textbf{apenas} com as
+estruturas documentadas aqui.
+
+\subsection{Estrutura do Programa, Tipos e Saída no Console}
+
+Todo programa Java começa pelo método \texttt{main}, que fica dentro de uma classe. Comentários
+de linha começam com \texttt{//}, os blocos ficam entre chaves e as instruções terminam com
+ponto e vírgula. Toda variável é declarada com o seu \textbf{tipo} antes do nome:
+
+\begin{lstlisting}[style=java]
+public class Main {
+    public static void main(String[] args) {
+        // comentários de linha começam com //
+        String titulo = "Neuromancer";   // texto
+        int ano = 1984;                  // número inteiro
+        double nota = 9.5;               // número com casas decimais
+        boolean disponivel = true;       // verdadeiro ou falso
+
+        System.out.println("Livro: " + titulo + " (" + ano + ")");
+    }
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{public static void main(String[] args)}: Início do programa (o equivalente
+    à \texttt{Main} do C\#). Essa linha é sempre escrita exatamente assim.
+
+    \item \texttt{System.out.println(...)}: Imprime um valor e pula uma linha. O \texttt{+} junta
+    textos, e números são convertidos em texto automaticamente.
+
+    \item \textbf{Tipos básicos}: \texttt{String} (texto, entre aspas duplas), \texttt{int}
+    (inteiro), \texttt{double} (número com casas decimais, escrito com ponto, como
+    \texttt{9.5}) e \texttt{boolean} (\texttt{true} ou \texttt{false}).
+
+    \item \texttt{if (condição) \{ ... \} else \{ ... \}}: Estrutura de decisão. As comparações
+    são \texttt{==}, \texttt{!=}, \texttt{>}, \texttt{<}, \texttt{>=} e \texttt{<=}, e as
+    condições podem ser combinadas com \texttt{\&\&} (e), \texttt{||} (ou) e \texttt{!} (não).
+
+    \item \textbf{Comparar textos}: Para saber se duas \texttt{String} têm o mesmo conteúdo, use
+    \texttt{texto.equals(outro)} (ou \texttt{equalsIgnoreCase}, que ignora maiúsculas e
+    minúsculas). O \texttt{==} entre textos não compara o conteúdo.
+\end{itemize}
+
+\subsection{Um Arquivo por Exercício}
+
+O código de referência é um projeto completo: cada classe pública fica em um arquivo com o
+mesmo nome da classe (\texttt{Pessoa.java}, \texttt{Cliente.java}...), e todos os arquivos
+começam com \texttt{package org.example;}. Nos exercícios, para simplificar, todas as classes
+de um exercício podem ficar em um \textbf{único arquivo}:
+
+\begin{lstlisting}[style=java]
+import java.util.ArrayList;   // os imports ficam no topo do arquivo
+
+public class Main {           // a classe com o main vem primeiro
+    public static void main(String[] args) {
+        Ajudante ajudante = new Ajudante();
+        ajudante.ajudar();
+    }
+}
+
+class Ajudante {              // as outras classes vêm depois, sem public
+    public void ajudar() {
+        System.out.println("Ajudando!");
+    }
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{Execução}: No terminal, o comando \texttt{java Main.java} compila e executa o
+    arquivo de uma vez (a partir do Java 11). A primeira classe do arquivo precisa ter o
+    \texttt{main}.
+
+    \item \texttt{public}: Só uma classe do arquivo pode ser \texttt{public}: a do
+    \texttt{main}. As demais são declaradas só com \texttt{class}.
+
+    \item \textbf{Erros de compilação}: Se o código tiver um erro que o compilador detecta, o
+    Java mostra a linha do erro e a mensagem \texttt{error: compilation failed}, e
+    \textbf{nenhuma} linha do programa é executada.
+\end{itemize}
+
+\subsection{Classes, Atributos e Construtores}
+
+Os atributos são declarados no corpo da classe, com o modificador de acesso, o tipo e o nome. O
+\textbf{construtor} tem o mesmo nome da classe e não tem tipo de retorno. Os métodos declaram o
+tipo do valor que retornam:
+
+\begin{lstlisting}[style=java]
+public class Autor {
+
+    private String nome;               // modificador + tipo + nome
+
+    public Autor(String nome) {        // construtor: mesmo nome da classe
+        this.nome = nome;
+    }
+
+    public String getNome() {          // este método retorna uma String
+        return nome;
+    }
+}
+
+Autor kazuo = new Autor("Kazuo Ishiguro");   // Tipo variavel = new ...
+System.out.println(kazuo.getNome());
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{Construtor}: Executado automaticamente pelo \texttt{new}. Os parâmetros também
+    declaram tipo: \texttt{public Livros(String isbn, String titulo, Autor autor)}.
+
+    \item \texttt{this}: Referencia o próprio objeto (como no C\# e no JavaScript). É usado para
+    diferenciar o atributo \texttt{this.nome} do parâmetro \texttt{nome}.
+
+    \item \textbf{Tipo de retorno}: Vem antes do nome do método. \texttt{void} indica que o
+    método não retorna nada; \texttt{String}, \texttt{double} ou o nome de uma classe indicam o
+    tipo do valor devolvido com \texttt{return}.
+
+    \item \textbf{Declaração com} \texttt{new}: A variável que guarda o objeto também declara
+    tipo: \texttt{Autor kazuo = new Autor(...);}.
+\end{itemize}
+
+\subsection{Modificadores de Acesso, Getters e Setters}
+
+O nível de acesso de cada atributo e método é indicado por um modificador, como no C\#:
+
+\begin{lstlisting}[style=java]
+public abstract class Pessoa {
+
+    protected String nome;   // acessível nas filhas e no mesmo pacote
+    protected int id;
+
+    public Pessoa(String nome, int id) {
+        this.nome = nome;
+        this.id = id;
+    }
+
+    public String getNome() {           // getter
+        return nome;
+    }
+
+    public void setNome(String nome) {  // setter
+        this.nome = nome;
+    }
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{public}: Acessível de qualquer classe.
+
+    \item \texttt{private}: Acessível só dentro da própria classe. Nem as classes filhas
+    enxergam um atributo \texttt{private} do pai; para ler o valor, elas usam o getter, como o
+    \texttt{Cliente} faz com \texttt{getNome()}. Acessar um atributo \texttt{private} fora da
+    classe é um erro de compilação (\texttt{nome has private access}).
+
+    \item \texttt{protected}: Acessível nas classes filhas e também em todas as classes do mesmo
+    pacote.
+
+    \item \textbf{Getter e setter}: Métodos públicos que leem (\texttt{getNome}) e alteram
+    (\texttt{setNome}) um atributo de forma controlada. Por convenção, os nomes começam com
+    \texttt{get} e \texttt{set}.
+\end{itemize}
+
+\subsection{Herança com \texttt{extends} e \texttt{super(...)}}
+
+A classe pai é indicada com \texttt{extends}. O construtor da filha chama \texttt{super(...)}
+para executar o construtor do pai, repassando os parâmetros de que ele precisa:
+
+\begin{lstlisting}[style=java]
+public class Cliente extends Pessoa {   // Cliente É UMA Pessoa
+
+    private List<Livros> livrosEmprestados;
+
+    public Cliente(String nome, int id) {
+        super(nome, id);   // chama o construtor de Pessoa
+        this.livrosEmprestados = new ArrayList<>();
+    }
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{class Filha extends Pai}: Declara a herança. Uma classe tem um único pai.
+
+    \item \texttt{super(...)}: Deve ser a \textbf{primeira} instrução do construtor da filha (o
+    equivalente ao \texttt{super(...)} do JavaScript e do Ruby e ao \texttt{: base(...)} do C\#).
+
+    \item \textbf{Construtor obrigatório na filha}: Se o construtor do pai recebe parâmetros, a
+    filha precisa declarar o seu próprio construtor e chamar \texttt{super(...)} nele, mesmo que
+    ela não tenha nenhum atributo novo.
+\end{itemize}
+
+Uma variável declarada com o tipo da classe pai pode guardar um objeto de qualquer classe
+filha. Pela variável, só podem ser chamados os métodos que existem no pai, mas, se a filha
+sobrescreveu algum deles, é a versão da filha que roda. O exemplo abaixo é complementar e não
+faz parte do código de referência:
+
+\begin{lstlisting}[style=java]
+Pessoa pessoa = new Cliente("Gerard Way", 101);   // pai guardando filha
+System.out.println(pessoa.getNome());              // método de Pessoa
+\end{lstlisting}
+
+\subsection{Classes e Métodos Abstratos}
+
+Uma classe abstrata é declarada com \texttt{abstract class}. Um \textbf{método abstrato} também
+leva a palavra \texttt{abstract} e tem só a assinatura, terminada em ponto e vírgula, sem corpo.
+A classe \texttt{Pessoa} do código de referência é abstrata, mas não tem métodos abstratos; o
+exemplo abaixo, complementar, mostra como eles funcionam:
+
+\begin{lstlisting}[style=java]
+public abstract class Pessoa {
+    // ... atributos, construtor e getters ...
+
+    // método abstrato: só a assinatura, sem corpo
+    public abstract void apresentar();
+}
+
+public class Cliente extends Pessoa {
+    // ... construtor ...
+
+    @Override
+    public void apresentar() {   // a filha é obrigada a implementar
+        System.out.println("Sou o cliente " + getNome());
+    }
+}
+
+Pessoa alguem = new Pessoa("Alguém", 1);
+// erro de compilação: Pessoa is abstract; cannot be instantiated
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{Instanciação proibida}: Tentar criar um objeto de uma classe abstrata com
+    \texttt{new} é um erro de compilação, e o programa nem chega a rodar.
+
+    \item \textbf{Implementação obrigatória}: Toda filha (que não seja abstrata também) precisa
+    implementar todos os métodos abstratos do pai. Se esquecer algum, o código não compila.
+
+    \item \textbf{Partes prontas}: Além dos métodos abstratos, a classe abstrata pode ter
+    atributos, construtor e métodos comuns, que as filhas herdam normalmente.
+\end{itemize}
+
+\subsection{Sobrescrita com \texttt{@Override}}
+
+A filha sobrescreve um método escrevendo outro com a \textbf{mesma assinatura} (mesmo nome, mesmos
+parâmetros e mesmo tipo de retorno). A anotação \texttt{@Override}, escrita logo acima,
+pede ao compilador que confira se o método realmente existe no pai ou na interface; se não
+existir (por exemplo, por um erro de digitação), o código não compila. No código de
+referência, ela aparece na implementação de um método de interface:
+
+\begin{lstlisting}[style=java]
+@Override
+public Livros localizarLivro(String titulo, Estante estante) {
+    // ...
+}
+\end{lstlisting}
+
+O mesmo vale para sobrescrever um método comum, que já tem corpo no pai. O exemplo abaixo é
+complementar e não faz parte do código de referência:
+
+\begin{lstlisting}[style=java]
+// Na Classe Base (Pessoa): método comum, com corpo
+public String descricao() {
+    return "Pessoa: " + nome;
+}
+
+// Na Classe Derivada (Cliente): sobrescreve o método do pai
+@Override
+public String descricao() {
+    return "Cliente: " + getNome();
+}
+\end{lstlisting}
+
+Dentro do método sobrescrito, \texttt{super.descricao()} chama a versão do pai (o equivalente ao
+\texttt{base.Metodo()} do C\#).
+
+\subsection{Interfaces com \texttt{interface} e \texttt{implements}}
+
+Uma interface é declarada com \texttt{interface} e contém só as assinaturas dos métodos. A
+classe que a implementa usa \texttt{implements} e escreve o corpo de cada método:
+
+\begin{lstlisting}[style=java]
+public interface GerenciaInventario {
+    // só a assinatura: quem implementar decide como funciona
+    Livros localizarLivro(String titulo, Estante estante);
+}
+
+public class Bibliotecario extends Pessoa implements GerenciaInventario {
+    // ... construtor ...
+
+    @Override
+    public Livros localizarLivro(String titulo, Estante estante) {
+        // implementação do contrato
+    }
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{Métodos da interface}: São escritos sem corpo e sem \texttt{public}, mas a
+    classe que os implementa deve declará-los como \texttt{public}.
+
+    \item \texttt{implements}: Uma classe pode implementar várias interfaces, separadas por
+    vírgula, e ao mesmo tempo herdar de uma classe com \texttt{extends}.
+
+    \item \textbf{Interface como tipo}: Uma variável, um parâmetro ou uma coleção podem ter o
+    tipo da interface. Assim, eles aceitam objetos de qualquer classe que a implemente.
+\end{itemize}
+
+\subsection{Composição e Agregação}
+
+A diferença entre os dois relacionamentos está em \textbf{onde a parte é criada}:
+
+\begin{lstlisting}[style=java]
+// COMPOSIÇÃO: o HashMap é criado DENTRO do construtor da Estante
+this.inventario = new HashMap<>();
+
+// AGREGAÇÃO: o Autor é criado FORA e só recebido pelo Livro
+public Livros(String isbn, String titulo, Autor autor) {
+    this.autor = autor;
+}
+\end{lstlisting}
+
+Com uma classe própria, a composição funciona do mesmo jeito: basta criar a parte com
+\texttt{new} dentro do construtor do dono. O exemplo abaixo é complementar e não faz parte do
+código de referência:
+
+\begin{lstlisting}[style=java]
+public class Biblioteca {
+    private Estante estante;
+
+    public Biblioteca(String codigoDaEstante) {
+        // composição: a Estante nasce junto com a Biblioteca
+        this.estante = new Estante(codigoDaEstante);
+    }
+}
+\end{lstlisting}
+
+\subsection{\texttt{ArrayList} e for-each}
+
+O \texttt{ArrayList} é a lista de tamanho dinâmico do Java. Entre os sinais de menor e maior,
+indica-se o tipo dos elementos; uma lista do tipo da classe pai aceita objetos de qualquer
+classe filha:
+
+\begin{lstlisting}[style=java]
+import java.util.ArrayList;   // no topo do arquivo
+
+ArrayList<Livros> emprestados = new ArrayList<>();   // lista vazia
+emprestados.add(billsBook);                          // adiciona no final
+emprestados.add(neuromancer);
+System.out.println(emprestados.size());              // quantidade
+System.out.println(emprestados.get(0).getTitulo());  // posição 0
+
+for (Livros livro : emprestados) {                   // for-each
+    System.out.println("- " + livro.getTitulo());
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{ArrayList<Tipo>}: Lista que guarda objetos do tipo informado. O
+    \texttt{import java.util.ArrayList;} precisa estar no topo do arquivo.
+
+    \item \texttt{.add(objeto)}, \texttt{.size()}, \texttt{.get(posicao)} e
+    \texttt{.contains(objeto)}: Inserem no final, retornam a quantidade, retornam o elemento da
+    posição (a primeira é 0) e testam se o objeto está na lista.
+
+    \item \texttt{for (Tipo variavel : lista)}: O \textbf{for-each}, que percorre a lista
+    elemento por elemento (o equivalente ao \texttt{forEach} do JavaScript e ao \texttt{for x in
+    lista} do Python).
+
+    \item \texttt{List<Tipo>}: No código de referência, alguns atributos são declarados como
+    \texttt{List} e criados como \texttt{ArrayList}. \texttt{List} é a interface que o
+    \texttt{ArrayList} implementa; para os exercícios, \texttt{ArrayList} basta.
+\end{itemize}
+
+\subsection{\texttt{HashMap}, \texttt{HashSet} e \texttt{null}}
+
+O \texttt{HashMap} guarda pares \textbf{chave e valor}, e cada chave é única. Entre os sinais de
+menor e maior, indica-se o tipo da chave e o tipo do valor. Os trechos com valores fixos abaixo
+são complementares:
+
+\begin{lstlisting}[style=java]
+import java.util.HashMap;   // no topo do arquivo
+
+HashMap<String, Livros> inventario = new HashMap<>();
+inventario.put("978-8576572022", neuromancer);     // chave -> valor
+
+Livros achado = inventario.get("978-8576572022");  // devolve o livro
+Livros nada = inventario.get("000");               // chave não existe
+
+if (nada == null) {
+    System.out.println("Nenhum livro com esse ISBN.");
+}
+
+for (Livros livro : inventario.values()) {   // percorre só os valores
+    System.out.println(livro.getTitulo());
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{.put(chave, valor)}: Guarda o par. Se a chave já existir, o valor antigo é
+    substituído.
+
+    \item \texttt{.get(chave)}: Devolve o valor guardado com aquela chave, ou \texttt{null} se a
+    chave não existir.
+
+    \item \texttt{null}: Valor que significa ``nenhum objeto''. Ele é testado com
+    \texttt{== null} ou \texttt{!= null}, como no programa principal do código de referência.
+
+    \item \texttt{.containsKey(chave)} e \texttt{.values()}: Testam se a chave existe e
+    devolvem só os valores, para serem percorridos com o for-each.
+
+    \item \texttt{HashSet<Tipo>}: Coleção que \textbf{não aceita elementos repetidos} e não
+    guarda a ordem de inserção. Seu \texttt{.add(objeto)} devolve \texttt{false} quando o
+    elemento já estava lá. Ela não é necessária nos exercícios.
+\end{itemize}
+
+\section{Código de Referência Completo}
+
+Abaixo está a implementação de referência utilizada para exemplificação do paradigma POO em
+Java. O projeto tem um arquivo por classe, todos no pacote \texttt{org.example}:
+
+\begin{lstlisting}[style=java, caption={Exemplo de Aplicação de POO em Java: \texttt{GerenciaInventario.java}}]
+package org.example;
+
+// INTERFACE
+// define um contrato — qualquer classe que implementar GerenciaInventario
+// É OBRIGADA a ter o método localizarLivro (o compilador confere isso)
+// equivale ao module com raise NotImplementedError do Ruby ou ao ABC do
+// Python
+
+public interface GerenciaInventario {
+    // o método é declarado mas não implementado aqui
+    // quem implementar a interface decide como ele vai funcionar
+    Livros localizarLivro(String titulo, Estante estante);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=java, caption={Exemplo de Aplicação de POO em Java: \texttt{Pessoa.java}}]
+package org.example;
+
+// CLASSE ABSTRATA
+// Pessoa é o molde principal — não pode ser instanciada diretamente
+// só existe para ser herdada por Cliente, Bibliotecario, Gerente etc
+// abstract em Java equivale ao ABC do Python
+public abstract class Pessoa {
+
+    // ENCAPSULAMENTO
+    // protected libera o acesso direto para as classes filhas e também
+    // para todas as classes do mesmo pacote (aqui, org.example)
+    // é parecido com o _ (underline) do Python e com o protected do C#
+    protected String nome;
+    protected int id;
+
+    public Pessoa(String nome, int id) {
+        this.nome = nome;
+        this.id = id;
+    }
+
+    // GETTER e SETTER
+    // como os atributos são protected, criamos métodos públicos
+    // pra ler e alterar de forma controlada de fora da hierarquia
+    public String getNome() {
+        return nome;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=java, caption={Exemplo de Aplicação de POO em Java: \texttt{Autor.java}}]
+package org.example;
+
+import java.util.ArrayList;
+import java.util.List;
+
+// CLASSE SIMPLES
+// Autor não herda de nada, é só um molde com nome e títulos escritos
+// vai ser referenciado dentro de Livros (isso é Agregação)
+public class Autor {
+
+    // ENCAPSULAMENTO
+    // private significa que só a própria classe pode acessar diretamente
+    // o acesso de fora é feito pelos getters e setters
+    private String nome;
+    private List<String> titulosEscritos;
+
+    public Autor(String nome) {
+        this.nome = nome;
+        // ArrayList é a lista mais comum do Java
+        // equivale ao List do C# ou ao array do Ruby
+        this.titulosEscritos = new ArrayList<>();
+    }
+
+    // GETTER
+    // como nome é private, criamos um método público pra lê-lo de fora
+    public String getNome() {
+        return nome;
+    }
+
+    public void adicionarTitulo(String titulo) {
+        if (!titulosEscritos.contains(titulo)) {
+            titulosEscritos.add(titulo);
+            System.out.println("[Autor] Título '" + titulo
+                    + "' adicionado com sucesso.");
+        } else {
+            System.out.println("[Autor] Aviso: Título '" + titulo
+                    + "' já existe.");
+        }
+    }
+
+    public List<String> getTitulosEscritos() {
+        return titulosEscritos;
+    }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=java, caption={Exemplo de Aplicação de POO em Java: \texttt{Livros.java}}]
+package org.example;
+
+import java.util.ArrayList;
+
+// AGREGAÇÃO
+// Livros guarda uma referência a um Autor que já existia antes
+// se o Livro sumir, o Autor continua existindo
+public class Livros {
+
+    private String isbn;
+    private String titulo;
+    private Autor autor;
+    private ArrayList<String> palavrasChave;
+
+    public Livros(String isbn, String titulo, Autor autor) {
+        this.isbn = isbn;
+        this.titulo = titulo;
+        this.autor = autor;
+        this.palavrasChave = new ArrayList<>();
+
+        // ao criar o Livro, já notificamos o Autor que ele escreveu esse
+        // título
+        // o Livro conhece o Autor e usa os métodos dele, mas não é dono
+        // dele: o Autor foi criado fora e continua existindo sem o Livro
+        autor.adicionarTitulo(titulo);
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void adicionarPalavraChave(String palavra) {
+        this.palavrasChave.add(palavra);
+    }
+
+    public String getDetalhes() {
+        return "'" + titulo + "' (ISBN: " + isbn + ") - Autor: "
+                + autor.getNome();
+    }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=java, caption={Exemplo de Aplicação de POO em Java: \texttt{Estante.java}}]
+package org.example;
+
+import java.util.HashMap;
+
+// AGREGAÇÃO
+// a Estante guarda Livros que já existiam fora dela (criados no main)
+// ela mapeia os Livros pelo ISBN usando um HashMap
+public class Estante {
+
+    private String codigoEstante;
+
+    // HashMap é uma estrutura de chave -> valor
+    // aqui a chave é o ISBN (String) e o valor é o objeto Livros
+    // equivale ao dicionário do Python ou ao Hash do Ruby
+    private HashMap<String, Livros> inventario;
+
+    public Estante(String codigo) {
+        this.codigoEstante = codigo;
+        // COMPOSIÇÃO: o HashMap é criado aqui dentro e só existe na Estante
+        this.inventario = new HashMap<>();
+    }
+
+    public void adicionarLivro(Livros livro) {
+        // put(chave, valor) adiciona um par no HashMap
+        this.inventario.put(livro.getIsbn(), livro);
+        System.out.println("[Inventário] Livro adicionado à estante "
+                + codigoEstante + ": " + livro.getTitulo());
+    }
+
+    public Livros buscarPorIsbn(String isbn) {
+        // get(chave) busca um valor pelo ISBN no HashMap
+        return this.inventario.get(isbn);
+    }
+
+    public HashMap<String, Livros> getInventario() {
+        return inventario;
+    }
+
+    public String getCodigoEstante() {
+        return codigoEstante;
+    }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=java, caption={Exemplo de Aplicação de POO em Java: \texttt{Cliente.java}}]
+package org.example;
+
+import java.util.ArrayList;
+import java.util.List;
+
+// HERANÇA
+// Cliente herda de Pessoa com extends
+// a relação é: "Cliente É UMA Pessoa"
+public class Cliente extends Pessoa {
+
+    // AGREGAÇÃO
+    // livrosEmprestados guarda referências pra Livros que já existiam
+    // fora do Cliente
+    // se o Cliente sumir, os Livros continuam existindo
+    private List<Livros> livrosEmprestados;
+
+    public Cliente(String nome, int id) {
+        // super() chama o construtor da classe mãe (Pessoa)
+        // obrigatório em Java quando a classe pai tem construtor com
+        // parâmetros
+        super(nome, id);
+        this.livrosEmprestados = new ArrayList<>();
+    }
+
+    public void emprestarLivro(Livros livro) {
+        if (!livrosEmprestados.contains(livro)) {
+            livrosEmprestados.add(livro);
+            System.out.println("[Empréstimo] Cliente " + getNome()
+                    + " pegou: " + livro.getTitulo() + " emprestado.");
+        } else {
+            System.out.println(
+                    "[Empréstimo] Aviso: O cliente já possui o livro: "
+                    + livro.getTitulo());
+        }
+    }
+
+    public void listarEmprestados() {
+        System.out.println("\n--- Livros de " + getNome() + " ---");
+
+        // PERCORRENDO A LISTA
+        // for(Tipo variavel : colecao) é o for-each do Java
+        // equivale ao for x in lista do Python ou ao .each do Ruby
+        for (Livros livro : livrosEmprestados) {
+            System.out.println("- " + livro.getTitulo());
+        }
+    }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=java, caption={Exemplo de Aplicação de POO em Java: \texttt{Bibliotecario.java}}]
+package org.example;
+
+// HERANÇA + INTERFACE
+// Bibliotecario herda de Pessoa e implementa GerenciaInventario
+// por isso é obrigado a ter o método localizarLivro
+public class Bibliotecario extends Pessoa implements GerenciaInventario {
+
+    public Bibliotecario(String nome, int id) {
+        super(nome, id);
+    }
+
+    // SOBRESCRITA (override)
+    // @Override avisa o compilador que estamos implementando um método da
+    // interface
+    // equivale ao override do C# ou ao def com mesmo nome no Ruby
+    @Override
+    public Livros localizarLivro(String titulo, Estante estante) {
+        System.out.println("\n[Busca] Bibliotecário " + getNome()
+                + " localizando '" + titulo + "'...");
+
+        // .values() retorna só os valores do HashMap, ignorando as chaves
+        // aqui percorremos todos os Livros guardados na estante
+        for (Livros livro : estante.getInventario().values()) {
+            // equalsIgnoreCase compara strings ignorando maiúsculas e
+            // minúsculas
+            // equivale ao .downcase == do Ruby ou ao .lower() == do Python
+            if (livro.getTitulo().equalsIgnoreCase(titulo)) {
+                return livro;
+            }
+        }
+        return null;
+    }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=java, caption={Exemplo de Aplicação de POO em Java: \texttt{Main.java}}]
+package org.example;
+
+public class Main {
+    public static void main(String[] args) {
+
+        // INSTANCIAÇÃO
+        // criando os objetos que vão ser usados ao longo da demonstração
+        Autor billCipher    = new Autor("Bill Cipher");
+        Autor kazuo         = new Autor("Kazuo Ishiguro");
+        Autor williamGibson = new Autor("William Gibson");
+
+        // HERANÇA em ação — Cliente e Bibliotecario herdam de Pessoa
+        // (os dois SÃO Pessoas)
+        Cliente gerard    = new Cliente("Gerard Way", 101);
+        Bibliotecario oli = new Bibliotecario("Oliver Sykes", 201);
+
+        // AGREGAÇÃO — a Estante é criada aqui e depois recebe Livros que
+        // já existem
+        Estante ficcao = new Estante("FIC-A1");
+
+
+        // AGREGAÇÃO — Livro agrega um Autor que já existia antes
+        Livros billsBook     = new Livros("978-0000000001",
+                "Bill's Book", billCipher);
+        Livros naoMeAbandone = new Livros("978-8535911732",
+                "Não Me Abandone Jamais", kazuo);
+        Livros neuromancer   = new Livros("978-8576572022",
+                "Neuromancer", williamGibson);
+
+        // ArrayList — palavras-chave mantém a ordem de inserção
+        billsBook.adicionarPalavraChave("Misterio");
+        billsBook.adicionarPalavraChave("Sobrenatural");
+        naoMeAbandone.adicionarPalavraChave("Distopia");
+        neuromancer.adicionarPalavraChave("Ficção Científica");
+        neuromancer.adicionarPalavraChave("Cyberpunk");
+
+
+        // HashMap — adicionando livros à estante mapeados pelo ISBN
+        ficcao.adicionarLivro(billsBook);
+        ficcao.adicionarLivro(naoMeAbandone);
+        ficcao.adicionarLivro(neuromancer);
+
+        // tentativa de título duplicado — o ArrayList com .contains() impede
+        williamGibson.adicionarTitulo("Neuromancer");
+
+
+        // AGREGAÇÃO — Cliente guarda referências pra Livros que já existiam
+        gerard.emprestarLivro(billsBook);
+        gerard.emprestarLivro(neuromancer);
+        // tentativa de duplicata — o .contains() impede
+        gerard.emprestarLivro(billsBook);
+        gerard.listarEmprestados();
+
+
+        // INTERFACE em ação
+        // Bibliotecario implementa GerenciaInventario, então pode chamar
+        // localizarLivro()
+        String tituloBuscado = "Neuromancer";
+        Livros encontrado = oli.localizarLivro(tituloBuscado, ficcao);
+
+        if (encontrado != null) {
+            System.out.println("-> Localizado com sucesso! Detalhes: "
+                    + encontrado.getDetalhes());
+        } else {
+            System.out.println("-> Livro não encontrado.");
+        }
+    }
+}
+\end{lstlisting}
+
+\section{Exercícios Práticos do Módulo}
+
+Em cada exercício, todas as classes podem ficar em um único arquivo \texttt{.java}, como
+explicado na seção ``Um Arquivo por Exercício'': a classe com o \texttt{main} vem primeiro e é a
+única com \texttt{public}.
+
+\begin{exercicio}{Exercício 1: Classe Abstrata e Herança (Os Moradores do Castelo)}
+Em \textit{O Castelo Animado}, filme do Studio Ghibli, um castelo mágico anda sozinho pelos
+campos, movido por um \textbf{demônio do fogo} que vive na lareira. Lá moram \textbf{magos} e o
+próprio demônio, e todo morador sabe se apresentar, cada um do seu jeito. Não existe um
+``morador genérico'': todo morador é de um tipo específico.
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Demônio do fogo}: criatura mágica feita de fogo, que vive na lareira e faz o
+    castelo andar.
+    \item \textbf{Feitiço}: magia que um mago sabe lançar. No código, é só um texto.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{Morador} (classe abstrata): atributo \texttt{private String nome}, recebido no
+    construtor; getter \texttt{public String getNome()}; e método abstrato
+    \texttt{public abstract void apresentar();}.
+
+    \item \texttt{Mago}: herda de \texttt{Morador} e tem o atributo
+    \texttt{private String feitico}. O construtor \texttt{Mago(String nome, String feitico)}
+    repassa o nome com \texttt{super(nome)}. Sobrescreve \texttt{apresentar()} com
+    \texttt{@Override}, imprimindo o nome (use \texttt{getNome()}) e o feitiço.
+
+    \item \texttt{DemonioDoFogo}: herda de \texttt{Morador}. O construtor
+    \texttt{DemonioDoFogo(String nome)} repassa o nome com \texttt{super(nome)}. Sobrescreve
+    \texttt{apresentar()} com \texttt{@Override}, imprimindo o nome e que ele faz o castelo
+    andar.
+\end{itemize}
+
+No programa principal, crie um \texttt{Mago} e um \texttt{DemonioDoFogo}, à sua escolha,
+guardando os dois em variáveis do tipo \texttt{Morador}, e chame \texttt{apresentar()} nos dois.
+Por fim, tente criar um objeto \texttt{Morador} diretamente e observe o erro: o programa nem
+chega a compilar. Depois, transforme essa linha em comentário (\texttt{//}) para o programa
+voltar a rodar.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 2: Herança, Sobrescrita e ArrayList (O Cardápio do Leblanc)}
+Em \textit{Persona 5}, o Leblanc é um pequeno café em Tóquio, famoso pelo café coado na hora e
+pelo curry da casa. O cardápio tem itens comuns, vendidos pelo preço cadastrado, e
+\textbf{combos}, que saem com desconto.
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Combo}: item que junta mais de um produto (por exemplo, curry e café) e custa
+    10\% menos que o preço cadastrado.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{ItemDoCardapio}: atributos \texttt{private String nome} e
+    \texttt{private double preco}, recebidos no construtor; getters
+    \texttt{public String getNome()} e \texttt{public double getPreco()}; e o método
+    \texttt{public double precoFinal()}, que retorna o preço.
+
+    \item \texttt{ComboLeblanc}: herda de \texttt{ItemDoCardapio}. O construtor
+    \texttt{ComboLeblanc(String nome, double preco)} repassa os dois valores com
+    \texttt{super(nome, preco)}. Sobrescreve \texttt{precoFinal()} com \texttt{@Override},
+    retornando o preço com 10\% de desconto (\texttt{getPreco() * 0.9}).
+
+    \item \texttt{CafeLeblanc}: atributo \texttt{private ArrayList<ItemDoCardapio> cardapio},
+    criado vazio no construtor, que não recebe parâmetros; método \texttt{public void adicionar(ItemDoCardapio item)}, que
+    adiciona um item já criado ao cardápio; e método \texttt{public void mostrarCardapio()},
+    que percorre o cardápio com um for-each e imprime o nome e o \texttt{precoFinal()} de cada
+    item.
+\end{itemize}
+
+No programa principal, crie dois \texttt{ItemDoCardapio} e um \texttt{ComboLeblanc}, com nomes e
+preços à sua escolha. Crie o \texttt{CafeLeblanc}, adicione os três itens e chame
+\texttt{mostrarCardapio()}.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 3: Interface e HashMap (Avistamentos na Cidade)}
+Em \textit{Dandadan}, dois estudantes do ensino médio descobrem que fantasmas e alienígenas
+existem de verdade e passam a anotar, em um mapa, os locais da cidade onde cada ser sobrenatural
+foi visto. Alienígenas e espíritos não têm nada em comum, a não ser uma coisa: todos se
+\textbf{manifestam} quando alguém investiga o local.
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Youkai}: espírito do folclore japonês, como um fantasma ou uma assombração.
+    \item \textbf{Alienígena}: ser de outro planeta.
+    \item \textbf{Avistamento}: registro de um ser sobrenatural visto em um local.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{Sobrenatural} (interface): método \texttt{void manifestar();}.
+
+    \item \texttt{Alienigena}: implementa \texttt{Sobrenatural}. Tem o atributo
+    \texttt{private String nome}, recebido no construtor, e implementa
+    \texttt{public void manifestar()} com \texttt{@Override}, imprimindo o nome e um
+    comportamento de alienígena à sua escolha.
+
+    \item \texttt{EspiritoYoukai}: também implementa \texttt{Sobrenatural}, do mesmo jeito:
+    atributo \texttt{private String nome}, recebido no construtor, e
+    \texttt{public void manifestar()} com um comportamento de espírito à sua escolha.
+
+    \item \texttt{MapaDeAvistamentos}: atributo
+    \texttt{private HashMap<String, Sobrenatural> avistamentos}, criado vazio no construtor, que
+    não recebe parâmetros; a chave do mapa é o nome do local. O método
+    \texttt{public void registrar(String local, Sobrenatural ser)} guarda o ser no mapa, usando
+    o local como chave. O método \texttt{public void investigar(String local)} busca o local no
+    mapa: se não encontrar nada (\texttt{null}), imprime que o local está tranquilo; se
+    encontrar, chama \texttt{manifestar()} do ser.
+\end{itemize}
+
+No programa principal, crie um \texttt{Alienigena} e um \texttt{EspiritoYoukai}, à sua escolha,
+e registre cada um em um local à sua escolha. Depois, investigue os dois locais e um terceiro
+local, que não foi registrado.
+\end{exercicio}
+
+\begin{exercicio}{Exercício 4: Revisão Geral (O Banquete da Masmorra)}
+Em \textit{Dungeon Meshi} (\textit{Delicious in Dungeon}), um grupo de aventureiros explora uma
+\textbf{masmorra} e, sem comida, aprende com um cozinheiro anão a preparar os monstros que
+derrota. Todo monstro vira ingrediente, mas cada tipo tem a sua própria \textbf{receita}. O
+cozinheiro carrega sempre a sua \textbf{panela}, que é dele e nasce com ele (composição), e
+junta os monstros que o grupo derrota pelo caminho (agregação).
+
+\textbf{Glossário:}
+\begin{itemize}
+    \item \textbf{Masmorra}: labirinto subterrâneo cheio de monstros.
+    \item \textbf{Slime}: monstro gelatinoso, parecido com uma bolha.
+    \item \textbf{Mandrágora}: planta-monstro com forma de gente, que grita quando é arrancada
+    da terra.
+    \item \textbf{Banquete}: refeição feita com todos os ingredientes reunidos.
+\end{itemize}
+
+Implemente:
+
+\begin{itemize}
+    \item \texttt{Monstro} (classe abstrata): atributo \texttt{private String nome}, recebido no
+    construtor, e o getter \texttt{public String getNome()}; método abstrato
+    \texttt{public abstract String receita();}, que nas filhas vai \textbf{retornar} o modo de
+    preparo.
+
+    \item \texttt{Slime} e \texttt{Mandragora}: herdam de \texttt{Monstro}. Cada uma tem um
+    construtor (\texttt{Slime(String nome)} e \texttt{Mandragora(String nome)}) que repassa o
+    nome com \texttt{super(nome)}, e sobrescreve
+    \texttt{receita()} com \texttt{@Override}, retornando um modo de preparo à sua escolha.
+
+    \item \texttt{Panela} (parte composta): atributo \texttt{private String material}, recebido
+    no construtor, e o getter \texttt{public String getMaterial()}.
+
+    \item \texttt{Cozinheiro}: atributos \texttt{private String nome},
+    \texttt{private Panela panela} e \texttt{private ArrayList<Monstro> ingredientes}. O
+    construtor \texttt{Cozinheiro(String nome, String materialDaPanela)} cria a \texttt{Panela}
+    \textbf{dentro} dele, com o material recebido, e cria a lista de ingredientes vazia. O
+    método \texttt{public void adicionarIngrediente(Monstro monstro)} adiciona um monstro já
+    criado à lista. O método \texttt{public void servirBanquete()} imprime o nome do cozinheiro
+    e o material da panela e, com um for-each, o nome e a \texttt{receita()} de cada
+    ingrediente.
+\end{itemize}
+
+No programa principal, crie um \texttt{Slime} e uma \texttt{Mandragora}, à sua escolha,
+\textbf{antes} do cozinheiro. Depois, crie o cozinheiro, com o nome e o material da panela à sua
+escolha, adicione os dois monstros e chame \texttt{servirBanquete()}. Explique, em um comentário
+no código, o que é composição e o que é agregação no seu programa.
+\end{exercicio}
