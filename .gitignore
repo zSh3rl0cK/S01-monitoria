@@ -1,3 +1,20 @@
 S01 2026.1
 .claude/
 correcoes/
+
+# Gabaritos dos exercícios: o repositório é público
+gabarito/
+
+# Gravações das aulas: são entregues só aos alunos da disciplina
+*.mp4
+*.mkv
+*.7z
+*video*.zip
+
+# Artefatos de build e configurações de IDE
+cmake-build-*/
+.idea/
+*.exe
+*.obj
+*.class
+target/
